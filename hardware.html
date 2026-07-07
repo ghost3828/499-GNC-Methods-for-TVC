@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hardware &amp; Parts | TVC·GNC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html">Mission</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html" class="active">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row">Equipment list · Order before Phase 3</div>
+    <h1>Hardware &amp; Parts</h1>
+    <p class="lede">
+      Everything needed for the Phase 3 benchtop flight computer, plus the airframe components a
+      follow-on flight project would use. COTS = commercial off-the-shelf. Prices and stock drift —
+      verify before ordering, and substitute equivalents freely as long as the sensor interfaces
+      (I²C/Qwiic) stay the same.
+    </p>
+  </section>
+
+  <h2>Flight Computer &amp; Sensors</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Part</th><th>Role in the study</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Microcontroller + starter kit</td>
+        <td><a href="https://www.sparkfun.com/products/15267">SparkFun Inventor's Kit (RedBoard)</a><br><span class="mono">KIT-15267</span></td>
+        <td>Arduino-compatible dev board, breadboard, jumpers, a hobby servo, and guided circuits for Day 11. Note: v4.1 is retired — order the current revision (v4.1.2, <span class="mono">KIT-21301</span>) or any Arduino Uno–class board.</td>
+      </tr>
+      <tr>
+        <td>IMU (gyro + accelerometer)</td>
+        <td><a href="https://www.sparkfun.com/products/19764">SparkFun 6DoF IMU — ISM330DHCX (Qwiic)</a><br><span class="mono">SEN-19764</span></td>
+        <td>The navigation heart: 3-axis gyro (angular velocity, body frame) + 3-axis accelerometer (specific force). Days 12–14. High output data rates comfortably support the 100 Hz loop.</td>
+      </tr>
+      <tr>
+        <td>Barometric pressure sensor</td>
+        <td><a href="https://www.sparkfun.com/products/20170">SparkFun Pressure Sensor — BMP581 (Qwiic)</a><br><span class="mono">SEN-20170</span></td>
+        <td>Altitude AGL from pressure; very low noise. Used for altitude logging on the bench and essential for any future descent guidance.</td>
+      </tr>
+      <tr>
+        <td>Qwiic cables</td>
+        <td><a href="https://www.sparkfun.com/products/15081">SparkFun Qwiic Cable Kit</a><br><span class="mono">KIT-15081</span></td>
+        <td>Solder-free, polarized I²C daisy-chain between the board and both sensors. Eliminates the most common wiring bugs on Day 12.</td>
+      </tr>
+      <tr>
+        <td>TVC servos (2×)</td>
+        <td><a href="https://www.blue-bird-model.com/products_detail/73.htm">Blue Bird micro servos</a> (BPS.space's choice)</td>
+        <td>Pitch and yaw gimbal actuation. The kit servo works for Day 14's single-axis bench demo; these are the flight-grade upgrade.</td>
+      </tr>
+      <tr>
+        <td>Storage (optional)</td>
+        <td>MicroSD breakout or onboard flash</td>
+        <td>Flight data logging when a USB tether isn't available. Serial-to-laptop logging is sufficient for this study.</td>
+      </tr>
+      <tr>
+        <td>Rangefinder (optional)</td>
+        <td><a href="https://www.sparkfun.com/products/18009">LIDAR distance sensor</a></td>
+        <td>Precise low-altitude AGL measurement for terminal descent. BPS.space doesn't use one, but it's a promising instructor-suggested addition — a good stretch investigation.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout steel">
+    <span class="label">Wiring notes</span>
+    Both sensors share one Qwiic (I²C) chain: board → IMU → barometer. Confirm each device's I²C
+    address with an I²C scanner sketch on Day 12 before debugging anything else. Servos draw more
+    current than a USB port likes under load — power them from a separate 5&nbsp;V supply or battery
+    pack with <strong>common ground</strong> to the microcontroller.
+  </div>
+
+  <h2>Airframe &amp; TVC Mechanism</h2>
+  <p>
+    Benchtop work needs only the TVC mount and servos; the rest of the airframe matters for a
+    follow-on flight project but is worth planning now, since mass properties feed
+    <code>vehicle_params.m</code>.
+  </p>
+  <table>
+    <thead><tr><th>Component</th><th>Approach</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>TVC gimbal mount</td><td><a href="https://www.thingiverse.com/search?q=thrust+vector+control&page=1&type=things&sort=relevant">Open-source 3D-printed designs</a></td><td>Two-axis gimbal holding a 29 mm motor tube; print early — iteration is normal. Measure actual gimbal travel; it sets the saturation limit in the sim.</td></tr>
+      <tr><td>Nose cone</td><td>3D print</td><td>Aerodynamics are secondary for a low-speed hop; mass and CG placement are what matter.</td></tr>
+      <tr><td>Fuselage</td><td>COTS cardboard tube</td><td>Standard model-rocket body tube; cheap, light, easy to cut.</td></tr>
+      <tr><td>Landing legs</td><td>3D print / design</td><td>Wide stance, some compliance. A future-project design task.</td></tr>
+      <tr><td>Fins</td><td>Probably none</td><td>A TVC lander flies too slowly for fins to stabilize it — that's the controller's job. Discuss at MR-1.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Safety</h2>
+  <ul>
+    <li><strong>No motors in this study.</strong> All Phase 3 work is benchtop with electric actuation only. Motor static fires or flights are a separate, instructor-supervised effort under the NAR safety code.</li>
+    <li>Software-limit servo travel before mechanically attaching linkages, so a code bug can't break the mount.</li>
+    <li>Standard lab rules for soldering and battery handling apply.</li>
+  </ul>
+
+  <div class="pagenav">
+    <a href="phase3.html">← Phase 3</a>
+    <a href="resources.html">Reference library →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>TVC·GNC Independent Study · Hardware</span>
+    <span><a href="index.html">Mission home</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

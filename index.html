@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TVC·GNC — Landing a Model Rocket | Independent Study</title>
+<meta name="description" content="A 3-week independent study on guidance, navigation, and control for a thrust-vector-controlled model rocket: simulation in Simulink, flight software on Arduino.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html" class="active">Mission</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row">Summer research period · 3 semester hours · 15 flight days</div>
+    <h1>Landing a Model Rocket:<br>GNC for Thrust Vector Control</h1>
+    <p class="lede">
+      A three-week independent study in guidance, navigation, and control. You will derive the
+      dynamics of a thrust-vector-controlled (TVC) rocket, build a closed-loop simulation of it in
+      MATLAB/Simulink, and begin porting your GNC algorithms to a custom Arduino-based flight
+      computer — the same sense&nbsp;→&nbsp;estimate&nbsp;→&nbsp;decide&nbsp;→&nbsp;actuate loop used on
+      every vehicle from quadcopters to orbital-class boosters.
+    </p>
+  </section>
+
+  <section class="timeline" aria-label="15-day mission timeline">
+    <div class="timeline-track">
+      <div class="tl-phase p1">
+        <a href="phase1.html">
+          <div class="tl-bar">
+            <div class="tl-day">01</div><div class="tl-day">02</div><div class="tl-day">03</div><div class="tl-day">04</div><div class="tl-day review">05</div>
+          </div>
+          <div class="tl-label"><b>Phase 1 — Dynamics &amp; the Plant</b>Attitude kinematics · rigid body EOM · open-loop 3DOF sim</div>
+        </a>
+      </div>
+      <div class="tl-phase p2">
+        <a href="phase2.html">
+          <div class="tl-bar">
+            <div class="tl-day">06</div><div class="tl-day">07</div><div class="tl-day">08</div><div class="tl-day">09</div><div class="tl-day review">10</div>
+          </div>
+          <div class="tl-label"><b>Phase 2 — Closing the Loop</b>PID control · sensor models · estimation · discrete flight software</div>
+        </a>
+      </div>
+      <div class="tl-phase p3">
+        <a href="phase3.html">
+          <div class="tl-bar">
+            <div class="tl-day">11</div><div class="tl-day">12</div><div class="tl-day">13</div><div class="tl-day">14</div><div class="tl-day review">15</div>
+          </div>
+          <div class="tl-label"><b>Phase 3 — Flight Software &amp; Hardware</b>Arduino · IMU bring-up · estimator + controller on the bench</div>
+        </a>
+      </div>
+    </div>
+    <div class="tl-legend"><span class="dot"></span>White dot = milestone review day. Click a phase to open its flight plan.</div>
+  </section>
+
+  <h2>The Mission</h2>
+  <p>
+    Propulsively landing a rocket is a pure GNC problem: an inherently unstable vehicle must know
+    its own attitude and motion from noisy sensors, and continuously steer its thrust vector to
+    stay upright and arrive at the ground at (nearly) zero velocity. This study builds that
+    capability in the order a real program would — <strong>model, simulate, then fly the software
+    on hardware</strong>.
+  </p>
+  <div class="phase-grid">
+    <a class="phase-card p1" href="phase1.html">
+      <div class="kicker">Phase 1 · Days 01–05</div>
+      <h3>Dynamics &amp; the Plant Model</h3>
+      <p>Coordinate frames, Euler angles, DCMs, quaternions, moments of inertia, and Euler's rotational equations. Ends with an open-loop 3DOF Simulink model of the vehicle.</p>
+      <div class="go">Open flight plan →</div>
+    </a>
+    <a class="phase-card p2" href="phase2.html">
+      <div class="kicker">Phase 2 · Days 06–10</div>
+      <h3>Closing the Loop</h3>
+      <p>PID attitude control, servo/actuator limits, sensor noise models, complementary and Kalman filtering — all running as discrete-time flight software inside the sim.</p>
+      <div class="go">Open flight plan →</div>
+    </a>
+    <a class="phase-card p3" href="phase3.html">
+      <div class="kicker">Phase 3 · Days 11–15</div>
+      <h3>Flight Software &amp; Hardware</h3>
+      <p>Bring up an Arduino flight computer: read the IMU over I²C, estimate attitude in real time, drive TVC servos, and demo the loop on the bench against your simulation.</p>
+      <div class="go">Open flight plan →</div>
+    </a>
+  </div>
+
+  <h2>Milestone Reviews</h2>
+  <p>
+    Progress is gated by three reviews modeled on flight-test practice. Each is a short briefing
+    to your instructor: show the artifact, defend the engineering, take questions.
+  </p>
+  <table>
+    <thead><tr><th>Review</th><th>Day</th><th>You must show</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="mono">MR-1</span> Plant Model Review</td><td>05</td>
+        <td>Hand-derived equations of motion and an open-loop 3DOF Simulink model whose behavior you can explain and sanity-check.</td>
+      </tr>
+      <tr>
+        <td><span class="mono">MR-2</span> Control Readiness Review</td><td>10</td>
+        <td>A closed-loop sim: noisy sensors → discrete-time estimator + PID → limited servo → plant, with a gain-tuning study and robustness checks.</td>
+      </tr>
+      <tr>
+        <td><span class="mono">MR-3</span> Flight Software Demo</td><td>15</td>
+        <td>Benchtop flight computer running your estimator and controller in real time, plus the final briefing and written report.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Getting Started</h2>
+  <div class="card">
+    <h3>Before Day 1</h3>
+    <ul>
+      <li>Read the <a href="syllabus.html">syllabus</a> — outcomes, deliverables, and how the three weeks fit together.</li>
+      <li>Install MATLAB + Simulink with the <strong>Aerospace Blockset</strong> and <strong>Control System Toolbox</strong>, and the <strong>Arduino IDE</strong>.</li>
+      <li>Create a GitHub repository for the study. All code, models, and your engineering notebook live there.</li>
+      <li>Order or draw the <a href="hardware.html">hardware</a> — parts should be in hand by the start of Phase 3.</li>
+      <li>Skim the <span class="tag tag-start">Start here</span> items on the <a href="resources.html">resources</a> page for motivation — especially the BPS.space Scout engineering video.</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <span class="label">Ground rules</span>
+    This study is benchtop-only: no live rocket motors are fired. Any future motor testing or
+    flight happens under instructor supervision and the NAR safety code, outside the scope of
+    these three weeks.
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>TVC·GNC Independent Study · Landing a Model Rocket</span>
+    <span><a href="resources.html">Reference Library</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

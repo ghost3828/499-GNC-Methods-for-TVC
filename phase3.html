@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 3 — Flight Software &amp; Hardware | TVC·GNC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html">Mission</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html" class="active">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row">Phase 03 · Flight days 11–15 · Milestone MR-3</div>
+    <h1>Flight Software &amp; Hardware</h1>
+    <p class="lede">
+      Simulation is where GNC is designed; hardware is where it's proven. This week you rebuild
+      your discrete flight software on an Arduino-class microcontroller — same estimator, same
+      controller, same 100 Hz loop — and close the loop on the bench with a real IMU and real
+      servos. The differences you find between sim and bench are the whole lesson.
+    </p>
+  </section>
+
+  <div class="callout" style="border-left-color:#4E6E33;">
+    <span class="label" style="color:#4E6E33;">Phase goal</span>
+    A flight computer that fuses sensor data to estimate the rocket's attitude and generates
+    control commands for the TVC mount in real time — demonstrated on the bench and compared
+    quantitatively against the Phase 2 simulation.
+  </div>
+
+  <div class="callout steel">
+    <span class="label">Before you start</span>
+    All parts on the <a href="hardware.html">hardware page</a> should be in hand: microcontroller,
+    ISM330DHCX IMU, BMP581 barometer, Qwiic cables, hobby servos, and (ideally) a printed TVC
+    mount. If parts slip, Days 11–13 can run on the microcontroller + IMU alone.
+  </div>
+
+  <!-- ============================== DAY 11 ============================== -->
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">11</span></div>
+    <div class="day-body">
+      <h3>Arduino Foundations &amp; Loop Scheduling</h3>
+      <p class="day-focus">Flight software is a loop that must never be late. Learn to write non-blocking code before touching a single sensor.</p>
+      <h4>Objectives</h4>
+      <ul>
+        <li>Set up the toolchain, blink an LED, and use the serial monitor/plotter as your telemetry window.</li>
+        <li>Internalize the non-blocking pattern: <strong>never</strong> <code>delay()</code> in flight code. Schedule work off <code>millis()</code>/<code>micros()</code>.</li>
+        <li>Build the flight-software skeleton: a main loop that runs the GNC task at exactly 100 Hz, mirrors your Simulink Flight Software subsystem (read → estimate → control → command → log), and measures its own timing.</li>
+        <li>Connect the concept: the fixed loop period on the Arduino <em>is</em> the sample time of your discrete controller — the ZOH from Day 7 made real.</li>
+      </ul>
+      <h4>Do</h4>
+      <ul>
+        <li>Work through Blink Without Delay, then extend it: three LEDs at three unrelated rates, no <code>delay()</code>.</li>
+        <li>Write <code>fsw_skeleton.ino</code>: a 100 Hz scheduler with stubbed estimate/control functions, printing loop rate and worst-case overrun. Prove it holds rate while printing telemetry.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.arduino.cc/en/Tutorial/BuiltInExamples/BlinkWithoutDelay">Arduino — Blink Without Delay</a></li>
+        <li><a href="https://www.arduino.cc/">arduino.cc</a> — language reference as needed</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b><code>fsw_skeleton.ino</code> holding 100 Hz with timing telemetry; notebook entry mapping each Simulink block to a function in the skeleton.</div>
+    </div>
+  </article>
+
+  <!-- ============================== DAY 12 ============================== -->
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">12</span></div>
+    <div class="day-body">
+      <h3>Sensor Bring-Up: IMU + Barometer over I²C</h3>
+      <p class="day-focus">Navigation inputs. Get clean, correctly-scaled, correctly-signed data before you trust a single computed angle.</p>
+      <h4>Objectives</h4>
+      <ul>
+        <li>Understand the two serial buses you're using: <strong>I²C</strong> (sensors, shared two-wire bus, addresses) and <strong>UART/Serial</strong> (telemetry to the laptop).</li>
+        <li>Bring up the ISM330DHCX (gyro + accel) and BMP581 (baro) on the Qwiic bus; configure ranges and output data rates deliberately (gyro range must cover expected body rates; ODR ≥ your loop rate).</li>
+        <li>Verify axes and signs against the datasheet: physically rotate the board about each axis and confirm the sign convention matches the body frame in your sim. Sign errors here are the classic "controller fights itself" bug.</li>
+        <li>Characterize the real sensors: log 60 s of stationary data; compute gyro bias and noise standard deviation; compare against the datasheet numbers you used in the Day 8 sim.</li>
+      </ul>
+      <h4>Do</h4>
+      <ul>
+        <li>Integrate sensor reads into the 100 Hz skeleton (no blocking waits — check data-ready).</li>
+        <li>Log data: stream CSV over serial and capture to file, and/or write to SD/flash if your board supports it. Every bench test from now on gets logged.</li>
+        <li>Update your Simulink sensor model with the measured noise/bias values. The sim and the hardware should now share one truth.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>SparkFun hookup guides for the <a href="https://www.sparkfun.com/products/19764">ISM330DHCX</a> and <a href="https://www.sparkfun.com/products/20170">BMP581</a> (linked from each product page)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Live gyro/accel/baro telemetry at loop rate; stationary-log characterization table (bias, σ) vs. datasheet; sim noise model updated.</div>
+    </div>
+  </article>
+
+  <!-- ============================== DAY 13 ============================== -->
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">13</span></div>
+    <div class="day-body">
+      <h3>Real-Time Attitude Estimation on Hardware</h3>
+      <p class="day-focus">Port the Day 9 estimator. The board should know which way is up — and keep knowing it while you wave it around.</p>
+      <h4>Objectives</h4>
+      <ul>
+        <li>Implement quaternion integration of the gyro at 100 Hz (fixed-step, renormalize each cycle) — the discrete twin of your Day 3 script.</li>
+        <li>Add startup gyro-bias calibration: average N samples while stationary, subtract thereafter. Quantify the drift improvement.</li>
+        <li>Implement the complementary filter correction from the accelerometer (valid on the bench, where specific force ≈ gravity).</li>
+        <li>Validate against physical truth: rest the board at known angles (level, 30°, 45°, 90° using a protractor/angle block) and record estimator error; do fast slews and confirm it recovers.</li>
+      </ul>
+      <h4>Do</h4>
+      <ul>
+        <li>Port your estimator into the skeleton. Writing the quaternion math yourself is preferred; if you adopt the <a href="https://github.com/peregrine-developments/Orientation">Orientation library</a>, first verify it against your own MATLAB results — it's untested by the instructor.</li>
+        <li>Stream estimated Euler angles to the serial plotter; capture the known-angle validation table.</li>
+        <li>Run the drift test: 5 minutes stationary — how far does the estimate wander with and without the accelerometer correction?</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Re-read the <a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">TKJ Kalman/complementary filter tutorial</a> — this time as an implementer</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Estimator running at 100 Hz on hardware; known-angle validation table; drift comparison plot.</div>
+    </div>
+  </article>
+
+  <!-- ============================== DAY 14 ============================== -->
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">14</span></div>
+    <div class="day-body">
+      <h3>Servos, Controller Port &amp; the Benchtop Closed Loop</h3>
+      <p class="day-focus">Actuation, then the moment of truth: tilt the vehicle and watch the gimbal push back.</p>
+      <h4>Objectives</h4>
+      <ul>
+        <li>Drive hobby servos with the Servo library / PWM; map gimbal angle δ ↔ servo microseconds, including linkage geometry, direction, and software travel limits that protect the mount.</li>
+        <li>Port the Day 7 discrete PID — identical gains, sample rate, saturation, and anti-windup — from Simulink into C.</li>
+        <li>Close the loop on the bench: mount the flight computer on (or with) the TVC assembly, command "vertical," and demonstrate that tilting the assembly drives a correcting gimbal deflection in the right direction, promptly, without oscillation.</li>
+        <li>Compare against sim: apply an attitude step on the bench, log the response, and overlay it on the equivalent Simulink run. Explain the differences (servo lag? linkage slop? estimator lag? loop jitter?).</li>
+      </ul>
+      <h4>Do</h4>
+      <ul>
+        <li>Servo checkout first with sensors out of the loop: sweep commands, verify limits and center.</li>
+        <li>Then close the loop. Debug with the Day 10 suspect list. If it oscillates or diverges, that's Exhibit A for the report — diagnose it like an engineer, in the log data.</li>
+        <li>Rehearse the MR-3 demo end-to-end once today, not tomorrow.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How Servo Motors Work &amp; How to Interface Them with Arduino</a></li>
+        <li><a href="https://youtu.be/4OmOwSB7xP8?t=4275">BPS.space Scout F — TVC hardware section</a></li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Benchtop closed loop working; logged bench step response overlaid on the simulated one, with a written explanation of the differences.</div>
+    </div>
+  </article>
+
+  <!-- ============================== DAY 15 ============================== -->
+  <article class="day review-day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">15</span></div>
+    <div class="day-body">
+      <h3>Final Demo, Briefing &amp; Report</h3>
+      <p class="day-focus">Show it, defend it, write it down so the next cadet can pick it up.</p>
+      <h4>Objectives</h4>
+      <ul>
+        <li>Deliver MR-3: live bench demo plus a 15-minute briefing covering architecture, models, results, and the sim-vs-hardware comparison.</li>
+        <li>Submit the final report (10–15 pages): GNC architecture; dynamics derivation; sim design and verification; control design and tuning rationale; estimation design; hardware implementation; results; lessons learned; and a concrete "path to flight" section — what remains before this vehicle could attempt a hop (6DOF validation, guidance for descent, ignition/abort logic, structural work, range safety).</li>
+        <li>Leave the repository in a state a future student could clone and continue: README, parameter files, wiring notes, and the notebook complete.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>MR-3 demo + briefing + final report + tidy repository.</div>
+    </div>
+  </article>
+
+  <div class="milestone">
+    <div class="label">Milestone Review · Day 15</div>
+    <h3>MR-3 — Flight Software Demo</h3>
+    <p>Ready when you can check every box:</p>
+    <ul>
+      <li>Flight computer holds its loop rate with sensors, estimator, controller, servo output, and logging all active.</li>
+      <li>Estimator validated at known angles and characterized for drift.</li>
+      <li>Live demo: tilt the assembly, gimbal corrects — correct direction, sensible magnitude, stable.</li>
+      <li>Bench-vs-sim step-response overlay with a defensible explanation of every visible difference.</li>
+      <li>Final report and briefing delivered; repository handoff-ready.</li>
+      <li>Can answer: <em>What surprised you most going from sim to hardware? Which single model improvement would most reduce the sim/bench gap? What is the very next test on the path to a real hop?</em></li>
+    </ul>
+  </div>
+
+  <div class="pagenav">
+    <a href="phase2.html">← Phase 2</a>
+    <a href="hardware.html">Hardware &amp; parts →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>TVC·GNC Independent Study · Phase 3</span>
+    <span><a href="resources.html">Reference Library</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

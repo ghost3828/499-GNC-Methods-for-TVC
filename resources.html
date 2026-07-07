@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference Library | TVC·GNC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html">Mission</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html" class="active">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row">Reference library · All phases</div>
+    <h1>Reference Library</h1>
+    <p class="lede">
+      Every reference for the study, organized by subject.
+      <span class="tag tag-start">Start here</span> marks the recommended first step in each area;
+      <span class="tag tag-shared">Shared folder</span> marks material in
+      <span class="mono">\USAFA Shared - Landing a Rocket\</span> rather than on the open web.
+    </p>
+  </section>
+
+  <h2>Motivation &amp; Worked Examples</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-start">Start here</span> <a href="https://youtu.be/4OmOwSB7xP8">BPS.space — Scout F, Engineering Cut</a>
+      <span class="note">The whole mission in one video. Simulation section at 18:36; TVC hardware section at 1:11:15.</span></li>
+    <li><a href="https://www.youtube.com/watch?v=nwgd1CV__rs">BPS.space — Modeling a Thrust Vectored Rocket in Simulink</a></li>
+    <li><a href="https://github.com/mathworks/Modeling-TVCd-Rocket-in-Simulink">MathWorks — Modeling a TVC'd Rocket in Simulink</a>
+      <span class="note">Reference architecture from MathWorks; compare against your own build rather than copying.</span></li>
+    <li><a href="https://www.youtube.com/watch?v=jrrC53Lru9I">TVC Rocket PID Tuning in Simulink — Ep. 3</a></li>
+    <li><span class="tag tag-shared">Shared folder</span> Example TVC simulation code — <span class="mono">1.References\2. Example Code</span>
+      <span class="note">Instructor's caveat: no guarantee these examples are correct or follow best practices. Read critically.</span></li>
+  </ul>
+
+  <h2>Attitude Kinematics &amp; Dynamics</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-start">Start here</span> <a href="http://www.starlino.com/dcm_tutorial.html">DCM Tutorial — An Introduction to Orientation Kinematics</a> (starlino)</li>
+    <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 slides — attitude parametrizations, kinematics, Euler's equations</li>
+    <li>Wie, Bong. <em>Space Vehicle Dynamics and Control</em>
+      <span class="note">The rigorous backstop for Phase 1. A space flight dynamics course (e.g., Astro 321) covers the same ground.</span></li>
+  </ul>
+
+  <h2>Modeling &amp; Simulation</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-shared">Shared folder</span> MATLAB Review slides</li>
+    <li><a href="https://www.youtube.com/watch?v=P1OEoA70YJo">A Simple MEMS Gyro Model Using MATLAB/Simulink</a></li>
+    <li><a href="https://www.thrustcurve.org">thrustcurve.org</a>
+      <span class="note">Measured thrust curves for hobby motors — source for the sim's thrust lookup table.</span></li>
+  </ul>
+
+  <h2>Controls</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=wkfEZmsQqiA&list=PLn8PRpmsu08pQBgjxYFXSsODEF3Jqmm-y">Understanding PID Control</a> — Brian Douglas, MATLAB Tech Talks</li>
+    <li><a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Brett Beauregard
+      <span class="note">The definitive walk from textbook PID to an implementation that survives real hardware. Its lessons are baked into the widely used Arduino PID library ("Arduino PID" is a productive search).</span></li>
+    <li><a href="https://www.youtube.com/user/ControlLectures">Brian Douglas — Control System Lectures</a></li>
+    <li><a href="https://www.youtube.com/c/Eigensteve">Steve Brunton — eigensteve</a>
+      <span class="note">Control Bootcamp and beyond — the deeper theory behind the stretch goals (LQR, state-space methods).</span></li>
+  </ul>
+
+  <h2>Navigation &amp; Estimation</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=6qV3YjFppuc&list=PLn8PRpmsu08ryYoBpEKzoMOveSTyS-h4a">Understanding Sensor Fusion and Tracking</a> — MATLAB Tech Talks</li>
+    <li><a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">A Practical Approach to Kalman Filter and How to Implement It</a> — TKJ Electronics</li>
+  </ul>
+
+  <h2>Embedded &amp; Hardware</h2>
+  <ul class="ref-list">
+    <li><span class="tag tag-start">Start here</span> <a href="https://www.arduino.cc/en/Tutorial/BuiltInExamples/BlinkWithoutDelay">Arduino — Blink Without Delay</a>
+      <span class="note">The single most important embedded pattern in this course: non-blocking, fixed-rate loops.</span></li>
+    <li><a href="https://www.arduino.cc/">arduino.cc</a> — language and library reference</li>
+    <li><a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How Servo Motors Work &amp; How to Interface Them with Arduino</a></li>
+    <li><a href="https://github.com/peregrine-developments/Orientation">Orientation — Arduino quaternion library</a>
+      <span class="note">Untested by the instructor. Verify against your own MATLAB results before trusting it in the loop.</span></li>
+    <li><a href="https://www.thingiverse.com/search?q=thrust+vector+control&page=1&type=things&sort=relevant">Thingiverse — open-source TVC mount designs</a></li>
+    <li><a href="https://www.blue-bird-model.com/products_detail/73.htm">Blue Bird servos</a> — BPS.space's TVC servo choice</li>
+    <li>Full parts list with roles and wiring notes → <a href="hardware.html">Hardware page</a></li>
+  </ul>
+
+  <h2>Glossary</h2>
+  <table>
+    <tbody>
+      <tr><td class="mono">GNC</td><td>Guidance, Navigation, and Control</td></tr>
+      <tr><td class="mono">TVC</td><td>Thrust Vector Control — steering by gimbaling the motor</td></tr>
+      <tr><td class="mono">COTS</td><td>Commercial off-the-shelf</td></tr>
+      <tr><td class="mono">DCM</td><td>Direction Cosine Matrix (rotation matrix)</td></tr>
+      <tr><td class="mono">EOM</td><td>Equations of motion</td></tr>
+      <tr><td class="mono">3DOF / 6DOF</td><td>Degrees of freedom simulated: planar (x, z, pitch) vs. full 3D translation + rotation</td></tr>
+      <tr><td class="mono">IMU</td><td>Inertial Measurement Unit — 3-axis gyro + 3-axis accelerometer</td></tr>
+      <tr><td class="mono">AGL</td><td>Above ground level</td></tr>
+      <tr><td class="mono">ZOH</td><td>Zero-order hold — models sampled (discrete-time) signals held between updates</td></tr>
+      <tr><td class="mono">I²C / UART</td><td>Serial communication protocols: shared sensor bus / point-to-point link</td></tr>
+      <tr><td class="mono">ODR</td><td>Output data rate (of a sensor)</td></tr>
+      <tr><td class="mono">MR</td><td>Milestone review</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pagenav">
+    <a href="hardware.html">← Hardware</a>
+    <a href="index.html">Mission home →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>TVC·GNC Independent Study · Reference Library</span>
+    <span><a href="index.html">Mission home</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

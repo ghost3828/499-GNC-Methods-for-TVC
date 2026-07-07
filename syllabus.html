@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Syllabus — TVC·GNC Independent Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html">Mission</a>
+      <a href="syllabus.html" class="active">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row">Course document · Rev A</div>
+    <h1>Syllabus</h1>
+    <p class="lede">
+      Independent study: Guidance, Navigation, and Control for Propulsive Landing of a
+      Thrust-Vector-Controlled Model Rocket. 3 semester hours, delivered over a 3-week summer
+      research period.
+    </p>
+  </section>
+
+  <div class="card">
+    <h3>Course Information</h3>
+    <table>
+      <tbody>
+        <tr><td class="mono">Instructor</td><td>[Instructor name · office · email]</td></tr>
+        <tr><td class="mono">Student</td><td>[Cadet/student name]</td></tr>
+        <tr><td class="mono">Period</td><td>[Start date] – [End date] (15 working days)</td></tr>
+        <tr><td class="mono">Meetings</td><td>15-minute stand-up each morning; three formal milestone reviews (Days 5, 10, 15)</td></tr>
+        <tr><td class="mono">Workload</td><td>Full-time equivalent (~35–40 hrs/week). This is an intensive, project-based course.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Course Description</h2>
+  <p>
+    This study surveys the guidance, navigation, and control (GNC) problem of propulsively landing
+    a small rocket, using a thrust-vector-controlled model rocket as the vehicle of interest. The
+    student derives rigid-body attitude kinematics and dynamics, implements them as a 3-degree-of-freedom
+    (ideally 6DOF) simulation in MATLAB/Simulink, closes the loop with discrete-time estimation and
+    control algorithms in the presence of modeled sensor noise and actuator limits, and ports those
+    algorithms to a custom microcontroller-based flight computer with a commercial IMU and barometer.
+  </p>
+  <p>
+    The unifying goal is <strong>intuition about GNC architectures</strong>: what the navigation,
+    guidance, and control functions each do, how they are designed and analyzed in simulation, and
+    what changes when the same algorithms must run in discrete time on real hardware with real
+    sensors.
+  </p>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>Engineering dynamics (particle and rigid-body) and ordinary differential equations.</li>
+    <li>Introductory MATLAB. Prior Simulink experience is helpful but not assumed — Day 5 includes a Simulink bootcamp.</li>
+    <li>Some exposure to programming in C/C++ or Arduino is helpful for Phase 3, but Phase 3 is written to be self-contained.</li>
+    <li>A space flight dynamics course (e.g., Astro 321 or equivalent) covers much of Phase 1 and is useful background, not a requirement.</li>
+  </ul>
+
+  <h2>Learning Outcomes</h2>
+  <p>By the end of the study, the student will be able to:</p>
+  <ol>
+    <li><strong>Represent attitude</strong> using Euler angles, direction cosine matrices, and quaternions; convert between them; and explain the strengths and failure modes (e.g., gimbal lock) of each.</li>
+    <li><strong>Derive and implement</strong> the translational (F&nbsp;=&nbsp;ma) and rotational (Euler's equations) equations of motion of a TVC rocket, including the mapping from gimbal deflection to body torque.</li>
+    <li><strong>Build a 3DOF simulation</strong> of the vehicle in Simulink (6DOF stretch goal, Aerospace Blockset permitted) with a continuous plant and a discrete-time flight-software subsystem separated by zero-order holds.</li>
+    <li><strong>Design and tune a PID attitude controller</strong>, characterize its step response and disturbance rejection, and articulate the effect of actuator saturation, rate limits, sample rate, and latency on stability.</li>
+    <li><strong>Model sensors and estimate state</strong>: implement IMU/barometer noise models and a complementary (or Kalman) filter that fuses gyro and accelerometer data into an attitude estimate.</li>
+    <li><strong>Implement flight software</strong> on a microcontroller: a fixed-rate loop that reads an IMU over I²C, runs the estimator and controller, commands TVC servos over PWM, and logs data.</li>
+    <li><strong>Communicate engineering results</strong> through milestone briefings, a maintained engineering notebook/repository, and a final written report comparing simulated and benchtop behavior.</li>
+  </ol>
+
+  <h2>Course Structure</h2>
+  <p>
+    The 15 days are organized as three five-day phases, each ending in a milestone review.
+    Day-by-day flight plans, readings, and deliverables live on the phase pages —
+    <a href="phase1.html">Phase 1</a>, <a href="phase2.html">Phase 2</a>,
+    <a href="phase3.html">Phase 3</a>.
+  </p>
+  <table>
+    <thead><tr><th>Day</th><th>Topic</th><th>Deliverable due</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">01</td><td><span class="tag tag-p1">P1</span> GNC architecture, mission framing, tool setup</td><td>GNC loop block diagram; repo initialized</td></tr>
+      <tr><td class="mono">02</td><td><span class="tag tag-p1">P1</span> Coordinate frames, Euler angles, DCMs</td><td>Frame-rotation worksheet</td></tr>
+      <tr><td class="mono">03</td><td><span class="tag tag-p1">P1</span> Quaternions and the kinematic differential equation</td><td>Quaternion propagation script</td></tr>
+      <tr><td class="mono">04</td><td><span class="tag tag-p1">P1</span> Moments of inertia, Euler's rotational EOM, TVC torque model</td><td>Hand derivation of 3DOF EOM</td></tr>
+      <tr><td class="mono">05</td><td><span class="tag tag-p1">P1</span> Simulink bootcamp; open-loop 3DOF plant</td><td><strong>MR-1: Plant Model Review</strong></td></tr>
+      <tr><td class="mono">06</td><td><span class="tag tag-p2">P2</span> PID control; first closed loop</td><td>Tuned PD/PID on ideal plant</td></tr>
+      <tr><td class="mono">07</td><td><span class="tag tag-p2">P2</span> Actuator limits; discrete-time flight software structure</td><td>Discrete controller @ fixed rate w/ ZOH</td></tr>
+      <tr><td class="mono">08</td><td><span class="tag tag-p2">P2</span> Sensor models: gyro, accelerometer, barometer</td><td>Sensor subsystem in sim</td></tr>
+      <tr><td class="mono">09</td><td><span class="tag tag-p2">P2</span> State estimation: complementary &amp; Kalman filtering</td><td>Attitude estimator vs. truth plot</td></tr>
+      <tr><td class="mono">10</td><td><span class="tag tag-p2">P2</span> Full-loop integration; robustness; 6DOF stretch</td><td><strong>MR-2: Control Readiness Review</strong></td></tr>
+      <tr><td class="mono">11</td><td><span class="tag tag-p3">P3</span> Arduino foundations; fixed-rate loop scheduling</td><td>100 Hz non-blocking loop skeleton</td></tr>
+      <tr><td class="mono">12</td><td><span class="tag tag-p3">P3</span> Sensor bring-up: IMU + barometer over I²C; data logging</td><td>Live sensor telemetry + logs</td></tr>
+      <tr><td class="mono">13</td><td><span class="tag tag-p3">P3</span> Real-time attitude estimation on hardware</td><td>Estimator tracking physical tilts</td></tr>
+      <tr><td class="mono">14</td><td><span class="tag tag-p3">P3</span> Servo control; controller port; benchtop closed loop</td><td>Bench demo rehearsal; sim comparison</td></tr>
+      <tr><td class="mono">15</td><td><span class="tag tag-p3">P3</span> Final demo, briefing, report</td><td><strong>MR-3: Flight Software Demo</strong> + report</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Deliverables &amp; Assessment</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Weight</th><th>Assessed on</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Engineering notebook &amp; repository</td><td class="mono">20%</td>
+        <td>Daily entries: derivations, design decisions, tuning logs, test results. Commits that tell the story of the work.</td>
+      </tr>
+      <tr>
+        <td>MR-1 — Plant Model Review</td><td class="mono">15%</td>
+        <td>Correctness of EOM derivation; sim sanity checks; ability to answer "what happens if…" questions about the dynamics.</td>
+      </tr>
+      <tr>
+        <td>MR-2 — Control Readiness Review</td><td class="mono">20%</td>
+        <td>Closed-loop performance and the reasoning behind it: gain choices, margins, effect of noise/saturation/sample rate.</td>
+      </tr>
+      <tr>
+        <td>MR-3 — Flight Software Demo</td><td class="mono">20%</td>
+        <td>Working benchtop loop (sensors → estimate → command → servo); quality of the sim-vs-hardware comparison.</td>
+      </tr>
+      <tr>
+        <td>Final report &amp; briefing</td><td class="mono">25%</td>
+        <td>10–15 page technical report and 15-minute briefing: architecture, models, results, lessons learned, path to flight.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Grading emphasizes <strong>engineering judgment over polish</strong>: a simpler model whose
+    behavior and limits the student can explain outscores a sophisticated one treated as a black
+    box. Checklists for each review are on the phase pages.
+  </p>
+
+  <h2>Scope &amp; Priorities</h2>
+  <p>
+    If time runs short, protect the spine of the course in this order: (1) working closed-loop
+    3DOF sim with discrete flight software, (2) hardware sensor bring-up and real-time attitude
+    estimation, (3) benchtop servo control loop, (4) 6DOF simulation, (5) Kalman filter beyond the
+    complementary filter, (6) LQR / quaternion-feedback control. Items 4–6 are stretch goals, not
+    requirements.
+  </p>
+
+  <h2>Policies</h2>
+  <ul>
+    <li><strong>Safety.</strong> Benchtop work only. No rocket motor is fired during this study. Servos, LiPo/USB power, and soldering follow lab safety rules.</li>
+    <li><strong>Collaboration &amp; sources.</strong> Reference implementations (BPS.space videos, the MathWorks TVC example, open-source flight code) may be studied and cited, but submitted models, code, and derivations must be the student's own work. Documentation standards per [institution honor code].</li>
+    <li><strong>AI tools.</strong> [Set policy: e.g., permitted for debugging and explanation with attribution in the notebook; derivations and design decisions must be independently justified at reviews.]</li>
+    <li><strong>Late work.</strong> Milestone reviews move only by prior arrangement; the compressed schedule leaves little slack.</li>
+  </ul>
+
+  <div class="pagenav">
+    <a href="index.html">← Mission</a>
+    <a href="phase1.html">Phase 1 flight plan →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>TVC·GNC Independent Study · Syllabus</span>
+    <span><a href="index.html">Mission home</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
