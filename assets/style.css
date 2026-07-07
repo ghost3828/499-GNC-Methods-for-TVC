@@ -50,8 +50,15 @@ body{
   border-bottom:3px solid var(--accent);
   position:sticky; top:0; z-index:50;
 }
+.site-logo{
+  position:absolute; top:50%; transform:translateY(-50%);
+  height:38px; width:38px; object-fit:cover; border-radius:8px;
+  z-index:51;
+}
+.site-logo-left{ left:14px; }
+.site-logo-right{ right:14px; }
 .topbar-inner{
-  max-width:1060px; margin:0 auto; padding:0 20px;
+  max-width:1060px; margin:0 auto; padding:0 64px;
   display:flex; align-items:center; justify-content:space-between;
   flex-wrap:wrap; gap:4px 18px; min-height:56px;
 }
@@ -168,7 +175,7 @@ code{
 .tl-day{
   flex:1; height:34px; border-radius:3px; position:relative;
   display:flex; align-items:flex-end; justify-content:center;
-  font-family:var(--mono); font-size:.6rem; color:#fff; padding-bottom:3px;
+  font-family:var(--mono); font-size:.66rem; font-weight:700; color:#fff; padding-bottom:3px;
   opacity:.92;
 }
 .tl-day:hover{ opacity:1; outline:2px solid rgba(255,255,255,.6); outline-offset:-2px; }

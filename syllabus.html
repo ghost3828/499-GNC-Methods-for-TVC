@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html" class="active">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html">Phase 2</a>
-      <a href="phase3.html">Phase 3</a>
       <a href="hardware.html">Hardware</a>
       <a href="resources.html">Resources</a>
     </nav>
@@ -78,28 +77,27 @@
   <h2>Course Structure</h2>
   <p>
     The 15 days are organized as three five-day phases, each ending in a milestone review.
-    Day-by-day flight plans, readings, and deliverables live on the phase pages —
-    <a href="phase1.html">Phase 1</a>, <a href="phase2.html">Phase 2</a>,
-    <a href="phase3.html">Phase 3</a>.
+    Day-by-day flight plans, readings, and deliverables live on each day's own page — click any
+    day below to open it.
   </p>
   <table>
     <thead><tr><th>Day</th><th>Topic</th><th>Deliverable due</th></tr></thead>
     <tbody>
-      <tr><td class="mono">01</td><td><span class="tag tag-p1">P1</span> GNC architecture, mission framing, tool setup</td><td>GNC loop block diagram; repo initialized</td></tr>
-      <tr><td class="mono">02</td><td><span class="tag tag-p1">P1</span> Coordinate frames, Euler angles, DCMs</td><td>Frame-rotation worksheet</td></tr>
-      <tr><td class="mono">03</td><td><span class="tag tag-p1">P1</span> Quaternions and the kinematic differential equation</td><td>Quaternion propagation script</td></tr>
-      <tr><td class="mono">04</td><td><span class="tag tag-p1">P1</span> Moments of inertia, Euler's rotational EOM, TVC torque model</td><td>Hand derivation of 3DOF EOM</td></tr>
-      <tr><td class="mono">05</td><td><span class="tag tag-p1">P1</span> Simulink bootcamp; open-loop 3DOF plant</td><td><strong>MR-1: Plant Model Review</strong></td></tr>
-      <tr><td class="mono">06</td><td><span class="tag tag-p2">P2</span> PID control; first closed loop</td><td>Tuned PD/PID on ideal plant</td></tr>
-      <tr><td class="mono">07</td><td><span class="tag tag-p2">P2</span> Actuator limits; discrete-time flight software structure</td><td>Discrete controller @ fixed rate w/ ZOH</td></tr>
-      <tr><td class="mono">08</td><td><span class="tag tag-p2">P2</span> Sensor models: gyro, accelerometer, barometer</td><td>Sensor subsystem in sim</td></tr>
-      <tr><td class="mono">09</td><td><span class="tag tag-p2">P2</span> State estimation: complementary &amp; Kalman filtering</td><td>Attitude estimator vs. truth plot</td></tr>
-      <tr><td class="mono">10</td><td><span class="tag tag-p2">P2</span> Full-loop integration; robustness; 6DOF stretch</td><td><strong>MR-2: Control Readiness Review</strong></td></tr>
-      <tr><td class="mono">11</td><td><span class="tag tag-p3">P3</span> Arduino foundations; fixed-rate loop scheduling</td><td>100 Hz non-blocking loop skeleton</td></tr>
-      <tr><td class="mono">12</td><td><span class="tag tag-p3">P3</span> Sensor bring-up: IMU + barometer over I²C; data logging</td><td>Live sensor telemetry + logs</td></tr>
-      <tr><td class="mono">13</td><td><span class="tag tag-p3">P3</span> Real-time attitude estimation on hardware</td><td>Estimator tracking physical tilts</td></tr>
-      <tr><td class="mono">14</td><td><span class="tag tag-p3">P3</span> Servo control; controller port; benchtop closed loop</td><td>Bench demo rehearsal; sim comparison</td></tr>
-      <tr><td class="mono">15</td><td><span class="tag tag-p3">P3</span> Final demo, briefing, report</td><td><strong>MR-3: Flight Software Demo</strong> + report</td></tr>
+      <tr><td class="mono"><a href="day01.html">01</a></td><td><span class="tag tag-p1">P1</span> <a href="day01.html">GNC architecture, mission framing, tool setup</a></td><td>GNC loop block diagram; repo initialized</td></tr>
+      <tr><td class="mono"><a href="day02.html">02</a></td><td><span class="tag tag-p1">P1</span> <a href="day02.html">Coordinate frames, Euler angles, DCMs</a></td><td>Frame-rotation worksheet</td></tr>
+      <tr><td class="mono"><a href="day03.html">03</a></td><td><span class="tag tag-p1">P1</span> <a href="day03.html">Quaternions and the kinematic differential equation</a></td><td>Quaternion propagation script</td></tr>
+      <tr><td class="mono"><a href="day04.html">04</a></td><td><span class="tag tag-p1">P1</span> <a href="day04.html">Moments of inertia, Euler's rotational EOM, TVC torque model</a></td><td>Hand derivation of 3DOF EOM</td></tr>
+      <tr><td class="mono"><a href="day05.html">05</a></td><td><span class="tag tag-p1">P1</span> <a href="day05.html">Simulink bootcamp; open-loop 3DOF plant</a></td><td><strong>MR-1: Plant Model Review</strong></td></tr>
+      <tr><td class="mono"><a href="day06.html">06</a></td><td><span class="tag tag-p2">P2</span> <a href="day06.html">PID control; first closed loop</a></td><td>Tuned PD/PID on ideal plant</td></tr>
+      <tr><td class="mono"><a href="day07.html">07</a></td><td><span class="tag tag-p2">P2</span> <a href="day07.html">Actuator limits; discrete-time flight software structure</a></td><td>Discrete controller @ fixed rate w/ ZOH</td></tr>
+      <tr><td class="mono"><a href="day08.html">08</a></td><td><span class="tag tag-p2">P2</span> <a href="day08.html">Sensor models: gyro, accelerometer, barometer</a></td><td>Sensor subsystem in sim</td></tr>
+      <tr><td class="mono"><a href="day09.html">09</a></td><td><span class="tag tag-p2">P2</span> <a href="day09.html">State estimation: complementary &amp; Kalman filtering</a></td><td>Attitude estimator vs. truth plot</td></tr>
+      <tr><td class="mono"><a href="day10.html">10</a></td><td><span class="tag tag-p2">P2</span> <a href="day10.html">Full-loop integration; robustness; 6DOF stretch</a></td><td><strong>MR-2: Control Readiness Review</strong></td></tr>
+      <tr><td class="mono"><a href="day11.html">11</a></td><td><span class="tag tag-p3">P3</span> <a href="day11.html">Arduino foundations; fixed-rate loop scheduling</a></td><td>100 Hz non-blocking loop skeleton</td></tr>
+      <tr><td class="mono"><a href="day12.html">12</a></td><td><span class="tag tag-p3">P3</span> <a href="day12.html">Sensor bring-up: IMU + barometer over I²C; data logging</a></td><td>Live sensor telemetry + logs</td></tr>
+      <tr><td class="mono"><a href="day13.html">13</a></td><td><span class="tag tag-p3">P3</span> <a href="day13.html">Real-time attitude estimation on hardware</a></td><td>Estimator tracking physical tilts</td></tr>
+      <tr><td class="mono"><a href="day14.html">14</a></td><td><span class="tag tag-p3">P3</span> <a href="day14.html">Servo control; controller port; benchtop closed loop</a></td><td>Bench demo rehearsal; sim comparison</td></tr>
+      <tr><td class="mono"><a href="day15.html">15</a></td><td><span class="tag tag-p3">P3</span> <a href="day15.html">Final demo, briefing, report</a></td><td><strong>MR-3: Flight Software Demo</strong> + report</td></tr>
     </tbody>
   </table>
 
@@ -132,7 +130,7 @@
   <p>
     Grading emphasizes <strong>engineering judgment over polish</strong>: a simpler model whose
     behavior and limits the student can explain outscores a sophisticated one treated as a black
-    box. Checklists for each review are on the phase pages.
+    box. Checklists for each review are on that milestone day's page.
   </p>
 
   <h2>Scope &amp; Priorities</h2>
@@ -154,7 +152,7 @@
 
   <div class="pagenav">
     <a href="index.html">← Overview</a>
-    <a href="phase1.html">Phase 1 flight plan →</a>
+    <a href="day01.html">Day 01 →</a>
   </div>
 
 </div>
