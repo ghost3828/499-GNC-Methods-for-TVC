@@ -1,23 +1,23 @@
 /* ==========================================================================
-   TVC·GNC Independent Study — courseware stylesheet
-   Aesthetic: flight-test document. Blueprint-grid paper, stencil condensed
-   headings, mono data labels, international-orange accent.
+   GNC Methods for Thrust Vector Control — courseware stylesheet
+   Aesthetic: USAFA Astro — Air Force blue and silver, stencil condensed
+   headings, mono data labels.
    ========================================================================== */
 
 :root{
-  --paper:      #F4F6F8;
-  --grid-line:  rgba(31, 61, 90, 0.06);
+  --paper:      #F3F5F7;
+  --grid-line:  rgba(4, 30, 66, 0.06);
   --card:       #FFFFFF;
-  --ink:        #16222E;
-  --muted:      #5A6B7C;
-  --line:       #D6DDE4;
-  --accent:     #E1490F;   /* international orange — flight test */
-  --accent-ink: #B23708;
-  --steel:      #1F5C8B;   /* steel blue — simulation/estimation */
-  --olive:      #4E6E33;   /* phase 3 — hardware */
-  --accent-soft:#FCEDE5;
-  --steel-soft: #E8F0F7;
-  --olive-soft: #EDF3E6;
+  --ink:        #041E42;  /* Air Force blue */
+  --muted:      #5B6B7A;
+  --line:       #D6DCE2;
+  --accent:     #0033A0;  /* Academy blue — primary accent */
+  --accent-ink: #00256E;
+  --steel:      #4A5A6B;  /* silver-blue — simulation/estimation */
+  --olive:      #8A8D8F;  /* Academy silver — phase 3 */
+  --accent-soft:#E7ECF7;
+  --steel-soft: #EAEDF0;
+  --olive-soft: #F0F0F1;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --disp: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
@@ -62,13 +62,13 @@ body{
   padding:8px 0;
 }
 .brand-mark{
-  width:11px; height:11px; background:var(--accent);
-  clip-path:polygon(50% 0, 100% 100%, 0 100%);
+  width:14px; height:14px; background:var(--accent);
+  clip-path:polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
   display:inline-block;
 }
 .brand .brand-sub{
   font-family:var(--mono); font-weight:400; font-size:.62rem;
-  letter-spacing:.18em; color:#8FA1B3; margin-left:2px;
+  letter-spacing:.18em; color:#9FB1C2; margin-left:2px;
 }
 .topbar nav{ display:flex; flex-wrap:wrap; gap:2px; padding:6px 0; }
 .topbar nav a{
@@ -231,7 +231,7 @@ code{
 .day-marker .d{ font-size:1.15rem; font-weight:600; }
 .day-marker .lbl{ font-size:.56rem; letter-spacing:.2em; color:#8FA1B3; }
 .day.review-day .day-marker{ background:var(--accent); }
-.day.review-day .day-marker .lbl{ color:#FBD8C6; }
+.day.review-day .day-marker .lbl{ color:#C9D6EC; }
 .day-body{ padding:16px 22px 18px; min-width:0; }
 .day-body h3{ margin:0 0 2px; font-size:1.15rem; }
 .day-focus{ color:var(--muted); font-size:.92rem; margin:0 0 4px; }
@@ -272,7 +272,7 @@ code{
   content:""; position:absolute; left:0; top:.32em; width:12px; height:12px;
   border:1.5px solid var(--accent); border-radius:2px;
 }
-.milestone a{ color:#F5A981; }
+.milestone a{ color:#8FB4E8; }
 
 /* ---------- tables ---------- */
 table{
