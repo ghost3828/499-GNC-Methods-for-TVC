@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 04 — Rigid-Body Dynamics &amp; the TVC Torque Model | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 04 of 15</div>
+    <h1>Rigid-Body Dynamics &amp; the TVC Torque Model</h1>
+    <p class="lede">Kinematics said how attitude changes given rates; dynamics says how rates change given torques — and the gimbal is where torque comes from.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">04</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Compute/estimate the rocket's <strong>moments of inertia</strong> (component buildup in CAD or hand calc; note the bifilar/pendulum swing test as the experimental method for later).</li>
+        <li>Write <strong>Euler's rotational equations of motion</strong> and explain each term, including why gyroscopic coupling nearly vanishes for a slender, slowly rolling rocket.</li>
+        <li>Derive the TVC moment: gimbal deflection δ tilts the thrust vector T, producing torque ≈ <code>T·sin(δ)·L</code> about the CG, where L is the gimbal-to-CG distance. Identify the small-angle linearization and its limits (typical TVC mounts: ±5–10°).</li>
+        <li>Assemble the planar (pitch-plane) <strong>3DOF equations of motion</strong>: states <code>[x, z, θ, ẋ, ż, θ̇]</code>, inputs thrust magnitude T(t) and gimbal angle δ(t), plus gravity.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Days 2–3 gave you the language for describing <em>how attitude changes given a rate</em> — kinematics. Today is dynamics: <em>why does the rate change at all</em>, i.e. what causes torque, and how much of it does a gimbaled motor actually produce. <strong>Euler's rotational equations</strong> relate body angular acceleration to applied torque and the inertia tensor, with a gyroscopic coupling term that — usefully — nearly disappears for a slender rocket that isn't rolling fast. The torque source is purely geometric: tilt the thrust vector by a small gimbal angle δ, and the component of thrust perpendicular to the body axis, acting at a moment arm L from the CG, produces a restoring or destabilizing torque you can write down in one line — <code>T·sin(δ)·L</code>, linearized to <code>T·δ·L</code> for the small angles a real TVC mount allows. Stack that torque equation with Newton's second law for translation and you get the planar 3DOF equations of motion that every simulation in this course is built on: six states, two control inputs (thrust magnitude and gimbal angle), one gravity term. Deriving this by hand — and checking it against limiting cases like pure vertical ascent — is what makes tomorrow's Simulink model something you trust rather than something you copied.
+      </div>
+
+      <h4>Concept 1 — Moment of inertia: the rotational mass</h4>
+      <p>Moment of inertia <code>I</code> is to rotation what mass is to translation — it quantifies how hard the vehicle resists angular acceleration. For a slender rocket the number that dominates is the <strong>transverse</strong> (pitch/yaw) moment of inertia about an axis through the CG perpendicular to the body; the <strong>roll</strong> moment about the long axis is much smaller (the mass sits close to the roll axis). Two practical ways to get it:</p>
+      <ul>
+        <li><strong>Component buildup.</strong> Treat the rocket as a stack of simple shapes — motor (solid cylinder), body tube (thin shell), nose cone, avionics bay — compute each part's inertia about its own centroid from the standard formulas, then use the <strong>parallel-axis theorem</strong> (<code>I = I_cm + m·d²</code>) to shift each to the vehicle CG and sum. CAD (Fusion 360, SolidWorks) does this automatically once you assign material densities, and is the recommended path.</li>
+        <li><strong>Experimental (for later verification).</strong> A <strong>bifilar pendulum</strong> (hang the rocket on two parallel strings and time its torsional oscillation) or a simple pendulum swing gives <code>I</code> from the measured period. You won't do this today, but note it now — it's how you'll validate the CAD number once the airframe is built, and the two disagreeing is a useful red flag.</li>
+      </ul>
+      <p>Because the motor burns propellant, <code>I</code> and the CG location both <strong>change during flight</strong>. For a first sim a constant value is acceptable, but flag mass depletion as a modeling assumption to revisit — near burnout the CG shift can noticeably change control authority.</p>
+
+      <h4>Concept 2 — Euler's rotational equations, term by term</h4>
+      <p>The full rotational dynamics in the body frame are <code>τ = I·ω̇ + ω × (I·ω)</code>. Read the two right-hand terms:</p>
+      <ul>
+        <li><strong><code>I·ω̇</code></strong> — the direct term: applied torque produces angular acceleration, the rotational <code>F = ma</code>. This is the part that matters for your controller.</li>
+        <li><strong><code>ω × (I·ω)</code></strong> — the gyroscopic coupling term: existing rotation about one axis creates torque about another (the reason a spinning top precesses). It's quadratic in angular rate.</li>
+      </ul>
+      <p>Here's the useful simplification for this vehicle: a TVC rocket is <strong>slender</strong> (transverse inertias roughly equal, <code>I_yy ≈ I_zz</code>) and deliberately <strong>rolls slowly</strong> (you actively null roll). When the roll rate is near zero and pitch/yaw rates are small, the cross-coupling term <code>ω × (I·ω)</code> becomes negligible, and the three axes <strong>decouple</strong> into three nearly independent single-axis equations <code>τ ≈ I·ω̇</code>. That's a big deal: it's what lets you design a simple single-axis pitch controller on Day 10 instead of wrestling a coupled nonlinear system. State the assumption explicitly — it's valid precisely because you keep roll rate low, so nulling roll isn't optional housekeeping, it's what keeps your control model honest.</p>
+
+      <h4>Concept 3 — Where the torque comes from: the gimbal geometry</h4>
+      <p>This is the heart of TVC and it's pure geometry. The motor produces thrust <code>T</code> roughly along the body axis. Gimbal it by a small angle <code>δ</code> and the thrust vector tilts: it now has a component <code>T·cos(δ)</code> still pushing along the body axis (essentially unchanged for small δ) and a component <code>T·sin(δ)</code> pushing <em>sideways</em>. That sideways component acts at the gimbal pivot, a distance <code>L</code> behind the CG, so it produces a torque about the CG:</p>
+      <p style="text-align:center"><code>τ = T · sin(δ) · L   ≈   T · δ · L   (small-angle, δ in radians)</code></p>
+      <p>Three things to internalize from this one line:</p>
+      <ul>
+        <li><strong>Control authority scales with thrust.</strong> <code>τ ∝ T</code> means you have <em>less</em> steering torque when the motor is throttling down or tailing off — exactly during the delicate phases. This is a fundamental TVC limitation, not a tuning issue.</li>
+        <li><strong>Authority scales with L.</strong> A longer gimbal-to-CG arm gives more torque per degree, which is why CG placement is a design lever.</li>
+        <li><strong>The small-angle window is real.</strong> Physical mounts allow only ±5–10°, so <code>sin(δ) ≈ δ</code> is a good approximation <em>and</em> a hard saturation limit — your controller can and will command more than the mount can deliver, so actuator saturation must be modeled (it's a common cause of instability the linear model won't predict).</li>
+      </ul>
+
+      <h4>Concept 4 — Assembling the planar 3DOF model</h4>
+      <p>Restrict to the pitch plane (the standard first simulation) and the state is six numbers: position <code>[x, z]</code>, pitch attitude <code>θ</code>, and their rates <code>[ẋ, ż, θ̇]</code>. The equations stack three pieces you now have:</p>
+      <ul>
+        <li><strong>Translation (Newton), in the world frame:</strong> thrust is produced along the body axis but must be resolved into world x and z using θ (this is exactly the DCM from Day 2, in 2D), then gravity subtracted. <code>m·ẍ = T·(components via θ and δ)</code>; <code>m·z̈ = T·(...) − m·g</code>.</li>
+        <li><strong>Rotation (Euler, single-axis):</strong> <code>I·θ̈ = T·sin(δ)·L</code> — the gimbal torque from Concept 3, plus any aerodynamic moment if you model it.</li>
+        <li><strong>Inputs:</strong> thrust magnitude <code>T(t)</code> (from the motor thrust curve) and gimbal angle <code>δ(t)</code> (from the controller, later; a fixed schedule for now).</li>
+      </ul>
+      <p>Write these as six first-order ODEs (the state-vector form from Day 00's second-order-to-two-first-order trick) and you have exactly what Simulink integrates tomorrow. The reason to derive it by hand first is <strong>trust</strong>: when the sim does something weird on Day 5, you need to know whether the model is wrong or the implementation is, and you can't tell the difference from equations you copied.</p>
+
+      <div class="callout">
+        <span class="label">Sanity checks before you trust the model</span>
+        <ul>
+          <li><strong>δ = 0, perfectly vertical (θ = 90° up):</strong> the model must collapse to 1D vertical ascent — thrust up, gravity down, no rotation. If θ drifts, you have a sign error.</li>
+          <li><strong>θ tilted, δ = 0:</strong> gravity should pull the trajectory over and there should be <em>no</em> restoring torque (that's the instability — nothing corrects the tilt). If the rocket self-rights with zero gimbal, your torque sign is backwards.</li>
+          <li><strong>Thrust = 0:</strong> pure ballistic/gravity motion, a parabola. Easy to eyeball.</li>
+          <li><strong>Units:</strong> δ in radians inside the trig, thrust in newtons, L in meters, I in kg·m². One stray degree-vs-radian turns τ into nonsense.</li>
+        </ul>
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Hand-derive the 3DOF EOM start to finish. Check limiting cases: δ = 0 and perfectly vertical → pure 1D ascent; θ ≠ 0 with δ = 0 → gravity turn + tumble tendency.</li>
+        <li>Estimate mass properties for a plausible vehicle (≈600–900 g, ≈65 cm long, F-class motor) and record them as the parameter file <code>vehicle_params.m</code> your sim will load. Include mass, length, transverse <code>I</code>, and gimbal-to-CG distance <code>L</code>.</li>
+        <li>Pull a real thrust curve (e.g., Estes F15) from <a href="https://www.thrustcurve.org">thrustcurve.org</a> and save it as a lookup table.</li>
+        <li>Compute a first-cut control-authority number: at peak thrust and max gimbal (say δ = 5°), what is <code>θ̈</code>? Compare it to how fast the open-loop instability grows. This tells you whether the vehicle is even controllable with the mount you assumed.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Degrees vs radians in the torque.</strong> <code>sin(δ)</code> and the small-angle <code>δ</code> both need radians. A degree slip scales your torque by ~57×.</li>
+          <li><strong>Forgetting thrust-dependent authority.</strong> Control torque dies with thrust; a controller tuned at peak thrust may have almost none near burnout. Model <code>T(t)</code>, don't assume constant thrust.</li>
+          <li><strong>Ignoring actuator saturation.</strong> The mount clamps at ±5–10°. A linear model will happily "command" 30° and look stable; the real vehicle saturates and can diverge.</li>
+          <li><strong>Constant-inertia assumption left unflagged.</strong> Fine for a first sim, but the CG and <code>I</code> shift as propellant burns — note it so it doesn't surprise you later.</li>
+          <li><strong>Frame slip in translation.</strong> Thrust is a body-frame vector; gravity is world-frame. Resolve thrust through θ before summing. This is the Day-02 DCM doing its job.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — rigid body dynamics (Euler's equations and the inertia tensor; the course's authoritative derivation).</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 slides — Euler's equations.</li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.thrustcurve.org">thrustcurve.org</a> — real motor thrust curves (Estes, AeroTech, etc.) as data files; the source for your <code>T(t)</code> lookup.</li>
+        <li><a href="https://www.youtube.com/watch?v=nwgd1CV__rs">BPS.space — Modeling a Thrust Vectored Rocket in Simulink</a> — watch the model-setup section to see this exact 3DOF/6DOF structure implemented; you're deriving what he builds.</li>
+        <li><a href="https://en.wikipedia.org/wiki/List_of_moments_of_inertia">List of moments of inertia</a> (Wikipedia) — the standard-shape formulas (cylinder, rod, shell) for your component buildup.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Parallel_axis_theorem">Parallel axis theorem</a> (Wikipedia) — for shifting each component's inertia to the vehicle CG.</li>
+        <li><a href="https://ocw.mit.edu/courses/16-07-dynamics-fall-2009/">Dynamics (16.07)</a> — MIT OpenCourseWare; the lectures on rigid-body dynamics and Euler's equations if you want the full derivation worked slowly.</li>
+        <li><a href="https://www.mathworks.com/help/aeroblks/6dofeulerangles.html">MATLAB 6DOF (Euler Angles) block</a> (Aerospace Blockset) — the block Day 5 uses; skim its documented equations to see they match your hand derivation.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Scanned hand derivation of the 3DOF EOM with limiting-case checks; <code>vehicle_params.m</code> (mass, length, transverse I, gimbal-to-CG L); thrust-curve lookup table; first-cut control-authority estimate.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day03.html">← Day 03</a>
+    <a href="day05.html">Day 05 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 04</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

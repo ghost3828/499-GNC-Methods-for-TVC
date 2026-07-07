@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 05 — Simulink Bootcamp → Open-Loop 3DOF Plant | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 05 of 15 · Milestone</div>
+    <h1>Simulink Bootcamp → Open-Loop 3DOF Plant</h1>
+    <p class="lede">Turn yesterday's equations into a running simulation, and prove to yourself it's right before anyone asks you to control it.</p>
+  </section>
+
+  <article class="day review-day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">05</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Implement the 3DOF EOM in Simulink — either from integrator blocks/MATLAB Function blocks, or using the Aerospace Blockset 3DOF rigid-body block (both are acceptable; know what the block does internally).</li>
+        <li>Structure the top level cleanly now: <strong>Plant</strong> (continuous), <strong>Actuators</strong>, <strong>Sensors</strong>, <strong>Flight Software</strong> (empty for now) — this is the architecture the whole course builds on.</li>
+        <li>Verify the model with sanity checks rather than vibes.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        This is the day Phase 1's math becomes a running model — and the day you set the architecture the rest of the course inherits. Structure the top level into four subsystems now, even though three of them are nearly empty: <strong>Plant</strong> (the continuous rigid-body dynamics you derived Day 4), <strong>Actuators</strong>, <strong>Sensors</strong>, and <strong>Flight Software</strong>. Building this separation on day one — instead of one tangled diagram — is what lets Phase 2 insert a controller, sensor noise, and an estimator without a rewrite, and what makes the Phase 3 hardware port an honest like-for-like comparison instead of a fresh reimplementation. Equally important today is the discipline of <strong>verification</strong>: a model that "looks right" is not the same as a model you've proven right. You'll run three specific checks — vertical ascent with zero gimbal deflection should match a hand-propagated 1D trajectory; a fixed small gimbal angle should produce a constant, calculable angular acceleration while thrust is on; zero thrust should produce a clean ballistic arc. Only after those pass do you run the instability demonstration — a 2° initial offset with no controller, tumbling — which becomes Exhibit A at MR-1 for why the rest of this course exists.
+      </div>
+
+      <h4>Concept 1 — Two ways to build the plant, and why you should know both</h4>
+      <p>You have two legitimate routes to the same 3DOF dynamics, and the objective says either is acceptable — but you should understand what each is doing:</p>
+      <ul>
+        <li><strong>From primitives:</strong> lay down integrator blocks and MATLAB Function blocks and wire up the six first-order ODEs from Day 4 by hand. More work, but nothing is hidden — every signal is one you named, and when something's wrong you can see exactly where. Recommended for a first build precisely because it forces you to confront your own equations.</li>
+        <li><strong>Aerospace Blockset 3DOF block:</strong> a pre-built rigid-body integrator that takes forces and moments in and puts states out. Faster and battle-tested, but it's a black box until you read its docs — you must know its frame conventions, its state ordering, and its sign conventions, or you'll feed it torque with the wrong sign and get a plausible-looking wrong answer.</li>
+      </ul>
+      <p>The instruction "know what the block does internally" is the real assignment here. Whichever route you pick, you should be able to state what integrates to what. A good exercise: build it both ways for the vertical-ascent case and confirm they agree — if they don't, one of them encodes a convention you got wrong, and finding that now is far cheaper than finding it after a controller is wrapped around it.</p>
+
+      <h4>Concept 2 — Why the four-subsystem architecture, and what goes in each</h4>
+      <p>The single most consequential decision today isn't the dynamics — it's the top-level structure. Splitting into four subsystems now, while three are nearly empty, pays off for the rest of the course:</p>
+      <ul>
+        <li><strong>Plant (continuous).</strong> The rigid-body dynamics from Day 4. This is the "real world" — it runs in continuous time and it's the one thing that will <em>not</em> exist on the hardware (the real rocket is the plant). Everything else is software or interface.</li>
+        <li><strong>Actuators.</strong> Right now, a pass-through: commanded gimbal angle in, actual gimbal angle out. Later it holds servo dynamics (rate limit, lag) and the ±5–10° saturation from Day 4. Isolating it now means adding realistic servo behavior later is a one-subsystem change.</li>
+        <li><strong>Sensors.</strong> Right now, ideal: true state in, measured state out. Later (Day 6) it adds noise, bias, and quantization to model the real IMU and barometer. Keeping it separate is what lets you toggle "perfect sensing" on and off to isolate estimator bugs.</li>
+        <li><strong>Flight Software.</strong> Empty today. This is the <em>only</em> subsystem that ports to the microcontroller in Phase 3, so everything you eventually want running on hardware — controller, estimator, guidance — goes here and nowhere else. Keeping it walled off is what makes the Phase 3 port an honest like-for-like comparison instead of a reimplementation.</li>
+      </ul>
+      <p>The organizing principle: <strong>the boundary between Flight Software and everything else is the hardware boundary.</strong> Draw it correctly now and Phase 3 is a port; draw it sloppily and Phase 3 is a rewrite.</p>
+
+      <h4>Concept 3 — Continuous plant, discrete software (a preview worth setting up now)</h4>
+      <p>The plant is continuous; the flight software will be discrete (fixed sample rate, zero-order hold), because that's how it runs on a microcontroller. You don't implement the discrete side today — Flight Software is empty — but structure the model so that boundary is clean: the interface between Sensors → Flight Software → Actuators is where zero-order holds and a fixed sample rate will live on Day 13. Naming this now means that when you insert the discrete controller later, you're filling a slot you already designed, not surgically splitting a continuous loop. If you're using the Aerospace Blockset, set a fixed-step solver from the start even for the all-continuous model — it makes the later discretization far less disruptive than switching solvers mid-course.</p>
+
+      <h4>Concept 4 — Verification: proving it, not eyeballing it</h4>
+      <p>The heart of a milestone day is that "looks plausible" is not evidence. Each verification case isolates one behavior against a number you can compute by hand:</p>
+      <ul>
+        <li><strong>(a) Vertical ascent, δ = 0.</strong> With zero gimbal and a vertical start, rotation should stay exactly zero and the altitude profile should match a 1D hand-propagation of <code>m·z̈ = T(t) − m·g</code>. This validates your translation math and thrust-curve lookup in isolation. Any pitch drift means a sign or frame error.</li>
+        <li><strong>(b) Fixed δ = 2°, thrusting.</strong> Angular acceleration should be constant and equal to <code>T·δ·L / J</code> (with δ in radians) for as long as thrust is roughly constant. Plot θ̈ and check the number against your hand calc — this validates the torque model from Day 4 directly.</li>
+        <li><strong>(c) Zero thrust.</strong> Pure ballistic motion — a parabola under gravity. This validates that gravity and integration are correct with the actuation removed.</li>
+      </ul>
+      <p>Only after all three pass do you run the <strong>instability demonstration</strong>: 2° off vertical, δ = 0, no controller. The vehicle should diverge and tumble — and critically, the <em>rate</em> of divergence should match the open-loop instability you can estimate from the linearized dynamics. That plot is MR-1's Exhibit A: it's the physical, simulated proof of why the entire controls half of the course exists. Running it <em>before</em> verification passes is a trap — a tumble from a bug looks identical to a tumble from real instability, and you can't tell which you're looking at unless the model is already trusted.</p>
+
+      <div class="callout">
+        <span class="label">Debugging discipline</span>
+        When a verification case fails — and one will — resist the urge to tweak gains or nudge signs randomly. Bisect instead: does case (c), zero thrust, work? If yes, gravity and integration are fine and the bug is in the thrust/torque path. Does (a) work but (b) fail? Translation is fine; the bug is in the rotational/torque branch. Each case is designed to light up a different part of the model, so a failure pattern points at a region. This is the same isolate-the-subsystem habit that the four-block architecture is built to support.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Run verification cases: (a) δ = 0, vertical start → altitude profile matches a hand-propagated 1D ascent; (b) fixed δ = 2° → constant angular acceleration ≈ T·δ·L/J while thrusting; (c) no thrust → ballistic arc.</li>
+        <li>Demonstrate the instability: start 2° off vertical with δ = 0 and show the divergence. This plot is Exhibit A at MR-1 for <em>why</em> the vehicle needs a controller.</li>
+        <li>Parameter sweep: how does time-to-tumble change with CG location and moment of inertia? (Longer gimbal arm and higher inertia both slow the divergence — confirm the trend matches intuition.)</li>
+        <li>If you built from primitives, rebuild the vertical-ascent case with the Aerospace Blockset 3DOF block (or vice versa) and confirm they agree. Disagreement exposes a convention error.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Variable-step solver hiding problems.</strong> A variable-step solver can mask a stiff or ill-posed model and makes later discretization awkward. Use a fixed-step solver from the start.</li>
+          <li><strong>Aerospace Blockset conventions.</strong> The 3DOF block has specific axis, sign, and state-order conventions. Read them — a sign mismatch on the moment input gives a rocket that self-rights with zero gimbal (physically impossible, silently wrong).</li>
+          <li><strong>Degrees vs radians at the block boundary.</strong> Simulink trig and the Aerospace blocks expect radians; a stray-degree gimbal input is the classic first-run bug.</li>
+          <li><strong>Tangling the architecture early.</strong> One giant flat diagram feels faster today and costs you a rewrite in Phase 2. Build the four subsystems even while empty.</li>
+          <li><strong>Skipping verification to get to the "fun" instability demo.</strong> A tumble from a bug and a tumble from instability look the same. Verify first, then demo.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-shared">Shared folder</span> MATLAB Review slides.</li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://github.com/mathworks/Modeling-TVCd-Rocket-in-Simulink">MathWorks — Modeling a TVC'd Rocket in Simulink</a> (reference architecture; don't copy, compare — the point is to check your structure against a known-good one, not inherit theirs).</li>
+        <li><a href="https://youtu.be/4OmOwSB7xP8?t=1116">BPS.space Scout F — simulation section</a> — see the same open-loop-then-controller progression in a real project.</li>
+        <li><a href="https://www.youtube.com/watch?v=nwgd1CV__rs">BPS.space — Modeling a Thrust Vectored Rocket in Simulink</a> — the step-by-step build companion to the reference above.</li>
+        <li><a href="https://www.mathworks.com/help/aeroblks/3dofbodyaxes.html">Aerospace Blockset — 3DOF (Body Axes) block</a> — the documented equations and conventions for the block route; read before wiring it up.</li>
+        <li><a href="https://www.mathworks.com/help/simulink/ug/types-of-solvers.html">Simulink solvers: fixed-step vs variable-step</a> (MathWorks) — why fixed-step matters here and how to choose one.</li>
+        <li><a href="https://www.mathworks.com/support/learn-with-matlab-tutorials.html">Simulink Onramp</a> (MathWorks, free) — if Simulink itself is new, the fastest way to get fluent with subsystems, buses, and scopes before the milestone.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Open-loop 3DOF Simulink model + verification plots. Presented at MR-1.</div>
+    </div>
+  </article>
+
+  <div class="milestone">
+    <div class="label">Milestone Review · Day 05</div>
+    <h3>MR-1 — Plant Model Review</h3>
+    <p>Ready when you can check every box:</p>
+    <ul>
+      <li>Block diagram of the GNC loop, refined from Day 1, with frames and units labeled.</li>
+      <li>Hand derivation of the 3DOF EOM, including the TVC torque term and its small-angle linearization.</li>
+      <li>Open-loop Simulink model organized as Plant / Actuators / Sensors / Flight Software.</li>
+      <li>At least three verification cases with plots, including the instability demonstration.</li>
+      <li>Can answer: <em>Why can't Euler angles alone carry us through a 90° pitch-over? What physically sets how fast the vehicle falls over? What happens to controllability as the motor burns out?</em></li>
+    </ul>
+  </div>
+
+  <div class="pagenav">
+    <a href="day04.html">← Day 04</a>
+    <a href="day06.html">Day 06 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 05</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

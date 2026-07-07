@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 03 — Quaternions | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 03 of 15</div>
+    <h1>Quaternions</h1>
+    <p class="lede">The attitude representation your flight computer will actually use: no gimbal lock, four numbers, one constraint.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">03</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Interpret a unit quaternion as an axis-angle rotation, and convert quaternion ↔ DCM ↔ Euler angles.</li>
+        <li>State and implement the <strong>quaternion kinematic differential equation</strong> — how body angular rate ω drives the quaternion, <code>q̇ = ½ q ⊗ [0; ω]</code>.</li>
+        <li>Explain why the quaternion must be renormalized during numerical integration.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Yesterday ended on a problem: Euler angles lock up exactly where a rocket needs them most. The quaternion is the standard fix, and it's what your flight computer will run at 100 Hz starting in Phase 3, so it's worth building real intuition now rather than treating it as four mysterious numbers. A unit quaternion encodes a single rotation as an axis and an angle: rotate by angle θ about unit axis <em>e</em>, and the quaternion is built from cos(θ/2) and sin(θ/2)·<em>e</em>. That representation has no singular orientation — nothing like gimbal lock exists in quaternion space — at the cost of a fourth, redundant number constrained so the quaternion always has unit norm. The <strong>kinematic differential equation</strong> is the rule for propagating attitude forward in time given a measured body rate ω, exactly the role the gyro will play on real hardware: it's a linear ODE in the quaternion, cheap to integrate, but numerical integration drifts the norm away from 1 over time, which is why every implementation renormalizes every step. Today's script — propagate a synthetic 90° pitch-over both ways and watch Euler angles misbehave while the quaternion doesn't — is the experiment that will make Day 13's embedded estimator make sense.
+      </div>
+
+      <h4>Concept 1 — A quaternion is axis-angle in disguise</h4>
+      <p>Don't start from "hypercomplex numbers" — start from the rotation you already understand. Euler's rotation theorem says <em>any</em> orientation is a single rotation by some angle θ about some fixed axis <em>e</em> (a unit vector). A quaternion is just an efficient packaging of that axis and angle. Written as a scalar part plus a vector part:</p>
+      <ul>
+        <li><code>q = [q_w, q_x, q_y, q_z] = [cos(θ/2),  e·sin(θ/2)]</code></li>
+        <li>The scalar <code>q_w = cos(θ/2)</code> tells you <em>how much</em> rotation (1 means no rotation, 0 means a 180° flip).</li>
+        <li>The vector part <code>[q_x, q_y, q_z] = e·sin(θ/2)</code> points along the <em>axis</em> of rotation and carries its magnitude.</li>
+      </ul>
+      <p>The <strong>half-angle</strong> (θ/2, not θ) is the one detail everyone trips on at first. It's not arbitrary: it's what makes the sandwich formula for rotating a vector (<code>v' = q ⊗ v ⊗ q⁻¹</code>) come out to a rotation of exactly θ. A direct consequence is <strong>double cover</strong>: <code>q</code> and <code>−q</code> represent the <em>same</em> physical orientation (rotating by θ about <em>e</em> equals rotating by −θ about −<em>e</em>). This matters in code — a filter or a difference operation can flip sign between steps without anything being wrong, and you handle it by choosing the sign with positive scalar part when you need a canonical form.</p>
+
+      <h4>Concept 2 — Quaternion multiplication and why it's the composition of rotations</h4>
+      <p>The Hamilton product <code>⊗</code> is how you <em>compose</em> rotations: <code>q_total = q_2 ⊗ q_1</code> means "do rotation 1, then rotation 2," the same job matrix multiplication does for DCMs. Three properties to carry forward:</p>
+      <ul>
+        <li><strong>Non-commutative:</strong> <code>q_2 ⊗ q_1 ≠ q_1 ⊗ q_2</code>, exactly as rotations don't commute. Order is physical.</li>
+        <li><strong>Inverse = conjugate (for unit quaternions):</strong> negate the vector part, <code>q⁻¹ = [q_w, −q_x, −q_y, −q_z]</code>. That's the "undo," the quaternion analog of the DCM transpose.</li>
+        <li><strong>Convention discipline:</strong> there are two live conventions in the wild — Hamilton (used by Wie, MATLAB, and most aerospace) and JPL. They differ in multiplication sign and component order. Pick Hamilton, write it in a header comment, and check any library you adopt against it. Most "my quaternion is rotating backwards" bugs are a convention mismatch, not a math error.</li>
+      </ul>
+
+      <h4>Concept 3 — The kinematic differential equation, unpacked</h4>
+      <p>This is the equation your flight software integrates every cycle, so understand each piece:</p>
+      <p style="text-align:center"><code>q̇ = ½ · q ⊗ [0; ω]</code></p>
+      <ul>
+        <li><strong>ω is the body-frame angular rate</strong> — precisely what the gyro measures, in rad/s. No conversion needed; the gyro output drops straight in. That's the whole reason this form is convenient on hardware.</li>
+        <li><strong>[0; ω] is a "pure" quaternion</strong> — scalar part zero, vector part the rate vector — so the product is well-defined.</li>
+        <li><strong>The ½</strong> is the half-angle from Concept 1 reappearing as a derivative; it's not a tunable factor.</li>
+        <li><strong>It's linear in q</strong>, which is what makes it cheap and stable to integrate — no trig evaluated per step, unlike Euler-angle kinematics whose equations contain <code>tan θ</code> and <code>sec θ</code> terms that blow up at 90°. That absence of a singularity <em>is</em> the payoff you'll see in today's plots.</li>
+      </ul>
+      <p>Note the contrast with Euler-angle kinematics you could write instead: those involve a matrix of trig functions with a <code>1/cos θ</code> that diverges at pitch = 90° — the same gimbal lock from Day 2, now showing up in the <em>propagation</em> step, not just the conversion. The quaternion equation has no such term anywhere.</p>
+
+      <h4>Concept 4 — Why renormalization is mandatory</h4>
+      <p>A true rotation quaternion always has norm exactly 1 — it lives on the unit sphere in 4D. But numerical integration takes small straight-line steps (Euler, RK4) along <code>q̇</code>, and those steps come off the sphere slightly every time, so the computed norm slowly drifts away from 1. An un-normalized quaternion no longer represents a pure rotation: convert it back to a DCM and you get a matrix that also scales the vector, corrupting attitude. The fix is one line per step — divide the quaternion by its norm, <code>q ← q / |q|</code> — pulling it back onto the sphere. Cheap, mandatory, and the source of a classic silent bug when omitted: attitude that looks fine for a few seconds then gradually goes wrong. Your Day 03 script demonstrates exactly this by plotting norm-vs-time with and without the renormalize step.</p>
+
+      <div class="callout">
+        <span class="label">Practical note</span>
+        Integration method matters here too. Forward Euler on <code>q̇</code> is fine for a first demonstration, but a fixed-step <strong>RK4</strong> integrator drifts the norm far less per step and is what you'll want on the flight computer where the loop runs at a fixed rate. Renormalize regardless — RK4 reduces the drift, it doesn't eliminate it. When you get to Day 13, the embedded version of this exact loop (gyro → integrate → renormalize) becomes the prediction step of your attitude estimator.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>MATLAB script: integrate the quaternion kinematics for a synthetic gyro-rate history (e.g., a 90° pitch-over maneuver); plot the recovered Euler angles and the quaternion norm drift with and without renormalization.</li>
+        <li>Repeat the same maneuver with Euler-angle kinematics and watch what happens near 90° pitch. Write two paragraphs in your notebook on why the quaternion wins.</li>
+        <li>Implement <code>quat2dcm</code>, <code>dcm2quat</code>, and <code>quatmultiply</code> yourself, then validate against MATLAB's Aerospace Toolbox versions and against your Day 02 <code>euler2dcm</code> (quat → dcm → euler should round-trip).</li>
+        <li>Verify double cover empirically: build <code>q</code> and <code>−q</code> from the same axis-angle, convert both to DCM, and confirm the matrices are identical.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Scalar-first vs scalar-last.</strong> Some libraries order the quaternion <code>[w,x,y,z]</code>, others <code>[x,y,z,w]</code>. MATLAB's Aerospace Toolbox is scalar-first. Mixing them silently scrambles your rotation — check every library's order.</li>
+          <li><strong>Hamilton vs JPL convention.</strong> Different multiplication sign and composition order. Commit to Hamilton and don't mix references.</li>
+          <li><strong>Forgetting the half-angle.</strong> Building a quaternion from <code>cos θ</code> instead of <code>cos(θ/2)</code> gives a rotation of the wrong amount. Always θ/2.</li>
+          <li><strong>Skipping renormalization.</strong> Works for a few seconds, then drifts. Always <code>q ← q/|q|</code> each step.</li>
+          <li><strong>Sign flips from double cover.</strong> <code>q</code> and <code>−q</code> are the same rotation; don't treat a sign flip between steps as an error, but do canonicalize (force <code>q_w ≥ 0</code>) when you need a unique representation.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — quaternion sections (the authoritative Hamilton-convention reference for this course).</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 slides — quaternion kinematics.</li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://eater.net/quaternions">Visualizing quaternions</a> — Ben Eater &amp; 3Blue1Brown's interactive explorable; the single best intuition-builder for what a quaternion <em>does</em> to a vector.</li>
+        <li><a href="https://www.youtube.com/watch?v=zjMuIxRvygQ">Quaternions and 3D rotation, explained interactively</a> — 3Blue1Brown (the companion video to the explorable above).</li>
+        <li><a href="https://www.youtube.com/watch?v=d4EgbgTm0Bg">But what is a quaternion?</a> — 3Blue1Brown (the deeper "why four dimensions" companion; optional but excellent).</li>
+        <li><a href="https://www.mathworks.com/help/aerotbx/ug/quatmultiply.html">MATLAB <code>quatmultiply</code> / <code>quat2dcm</code> / <code>dcm2quat</code></a> (Aerospace Toolbox) — the built-ins to validate your hand implementations against.</li>
+        <li><a href="https://ntrs.nasa.gov/citations/19770024290">Quaternions and their applications to rotation (Kuipers-style reference)</a> / NASA technical reports — for the rigorous derivation of the sandwich product and kinematic equation.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation">Quaternions and spatial rotation</a> (Wikipedia) — concise reference for the conversion formulas (quat ↔ DCM) you'll implement.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Quaternion propagation script with plots (Euler angles + norm drift with/without renormalization); hand-written <code>quat2dcm</code>/<code>dcm2quat</code>/<code>quatmultiply</code> validated against the toolbox; notebook entry comparing Euler vs. quaternion propagation.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day02.html">← Day 02</a>
+    <a href="day04.html">Day 04 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 03</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
