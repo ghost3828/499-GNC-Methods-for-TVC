@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hardware &amp; Parts | TVC·GNC</title>
+<title>Hardware &amp; Parts | GNC Methods for TVC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -13,9 +13,9 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="index.html"><span class="brand-mark"></span>TVC·GNC <span class="brand-sub">Independent Study</span></a>
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
-      <a href="index.html">Mission</a>
+      <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
       <a href="phase1.html">Phase 1</a>
       <a href="phase2.html">Phase 2</a>
@@ -57,7 +57,7 @@
       <tr>
         <td>Barometric pressure sensor</td>
         <td><a href="https://www.sparkfun.com/products/20170">SparkFun Pressure Sensor — BMP581 (Qwiic)</a><br><span class="mono">SEN-20170</span></td>
-        <td>Altitude AGL from pressure; very low noise. Used for altitude logging on the bench and essential for any future descent guidance.</td>
+        <td>Altitude AGL from pressure; very low noise. Used for altitude logging on the bench and essential for any future altitude-hold guidance.</td>
       </tr>
       <tr>
         <td>Qwiic cables</td>
@@ -77,7 +77,7 @@
       <tr>
         <td>Rangefinder (optional)</td>
         <td><a href="https://www.sparkfun.com/products/18009">LIDAR distance sensor</a></td>
-        <td>Precise low-altitude AGL measurement for terminal descent. BPS.space doesn't use one, but it's a promising instructor-suggested addition — a good stretch investigation.</td>
+        <td>Precise low-altitude AGL measurement. BPS.space doesn't use one, but it's a promising instructor-suggested addition — a good stretch investigation.</td>
       </tr>
     </tbody>
   </table>
@@ -100,10 +100,9 @@
     <thead><tr><th>Component</th><th>Approach</th><th>Notes</th></tr></thead>
     <tbody>
       <tr><td>TVC gimbal mount</td><td><a href="https://www.thingiverse.com/search?q=thrust+vector+control&page=1&type=things&sort=relevant">Open-source 3D-printed designs</a></td><td>Two-axis gimbal holding a 29 mm motor tube; print early — iteration is normal. Measure actual gimbal travel; it sets the saturation limit in the sim.</td></tr>
-      <tr><td>Nose cone</td><td>3D print</td><td>Aerodynamics are secondary for a low-speed hop; mass and CG placement are what matter.</td></tr>
+      <tr><td>Nose cone</td><td>3D print</td><td>Aerodynamics are secondary for a low-speed flight test; mass and CG placement are what matter.</td></tr>
       <tr><td>Fuselage</td><td>COTS cardboard tube</td><td>Standard model-rocket body tube; cheap, light, easy to cut.</td></tr>
-      <tr><td>Landing legs</td><td>3D print / design</td><td>Wide stance, some compliance. A future-project design task.</td></tr>
-      <tr><td>Fins</td><td>Probably none</td><td>A TVC lander flies too slowly for fins to stabilize it — that's the controller's job. Discuss at MR-1.</td></tr>
+      <tr><td>Fins</td><td>Probably none</td><td>A TVC vehicle flies too slowly for fins to stabilize it — that's the controller's job. Discuss at MR-1.</td></tr>
     </tbody>
   </table>
 
@@ -124,8 +123,8 @@
 
 <footer>
   <div class="foot-inner">
-    <span>TVC·GNC Independent Study · Hardware</span>
-    <span><a href="index.html">Mission home</a></span>
+    <span>GNC Methods for Thrust Vector Control · Hardware</span>
+    <span><a href="index.html">Overview</a></span>
   </div>
 </footer>
 
