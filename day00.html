@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 00 — Prerequisite Refresher | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <div class="site-brand-right">
+    <span class="site-astro-label">USAFA ASTRO</span>
+    <img class="site-logo" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  </div>
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 00 · Prerequisite refresher, optional</div>
+    <h1>Prerequisite Refresher</h1>
+    <p class="lede">
+      Not one of the 15 graded days — a self-paced diagnostic to shore up the math and physics
+      Day 1 assumes you already have: vectors, matrices, and Newtonian mechanics.
+    </p>
+  </section>
+
+  <div class="callout">
+    <span class="label">How to use this day</span>
+    Day 1 opens by deriving a GNC loop, and by Day 2 you're building rotation matrices by hand.
+    Nothing here is new material — it's a refresher and a diagnostic. Work the problem set below;
+    anywhere you get stuck or feel shaky is exactly where to spend an extra hour before Day 1
+    starts. If everything below is comfortable, skip straight to <a href="day01.html">Day 1</a>.
+  </div>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">00</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li><strong>Vectors:</strong> compute dot products, cross products, magnitudes, and unit vectors by hand, and explain each result geometrically (dot → projection/angle, cross → perpendicular vector whose magnitude is an area).</li>
+        <li><strong>Linear algebra:</strong> multiply matrices and vectors, transpose and invert a small matrix, and explain what an <strong>orthogonal matrix</strong> is — a rotation matrix (DCM) is exactly that, and you'll build one by hand on Day 2.</li>
+        <li><strong>Newtonian mechanics:</strong> draw a free-body diagram, apply F&nbsp;=&nbsp;ma, compute torque as <code>τ = r × F</code>, and state the rotational analog <code>τ = Iα</code>.</li>
+        <li><strong>Differential equations:</strong> recognize a first- vs. second-order ODE, and explain — at the level of "the slope tells you the next step" — what numerical integration (Euler's method) does. This is what Simulink is doing under the hood on Day 5.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Everything this course builds — attitude kinematics, rigid-body dynamics, a Simulink model,
+        an embedded estimator — is assembled out of four ingredients you likely already have from
+        prior coursework: vectors, matrices, F&nbsp;=&nbsp;ma, and the idea of an ODE. <strong>Vectors</strong>
+        are how you'll represent position, velocity, angular rate, and force, and the two products you
+        need are the dot product (how much two vectors point the same way — it's how you'll project
+        gravity onto a body axis) and the cross product (the vector perpendicular to two others — it's
+        how torque and angular momentum are defined). <strong>Linear algebra</strong> shows up because a
+        rotation is a linear transformation: multiplying a vector by a 3×3 matrix rotates it from one
+        frame to another, and the special property that makes a matrix a valid rotation — orthogonality,
+        <code>Rᵀ = R⁻¹</code> — is the exact check you'll run on your first hand-built DCM on Day 2.
+        <strong>Newtonian mechanics</strong> supplies the physics: F&nbsp;=&nbsp;ma for how the vehicle
+        translates, and its rotational twin, torque and moment of inertia, for how it tumbles — which is
+        the whole reason a TVC rocket needs a controller in the first place. And every one of those laws
+        is a <strong>differential equation</strong>: a rule for how fast something changes right now, which
+        is exactly what a Simulink integrator block evaluates at each time step. None of this is deep —
+        it's the same four ideas from your dynamics and math courses, just about to get a lot of
+        repetition. This day exists so a shaky spot in any of them doesn't quietly turn into a confusing
+        bug three weeks from now.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Work the self-check problem set below on paper. Don't use a calculator or MATLAB for the vector/matrix problems — the point is to rebuild hand fluency, not just get the right number.
+          <ul>
+            <li><strong>Vectors:</strong> given <code>a = [1, 2, 2]</code> and <code>b = [0, 1, -1]</code>, compute <code>a·b</code>, <code>a×b</code>, <code>|a|</code>, and the unit vector along <code>a</code>. Then explain in one sentence what <code>a·b = 0</code> would have told you.</li>
+            <li><strong>Matrices:</strong> multiply a 3×3 rotation-like matrix (any matrix with orthonormal rows works, e.g. a 90° rotation about z) by a vector by hand; then transpose the matrix and multiply again. Confirm the second result "undoes" the first.</li>
+            <li><strong>Mechanics:</strong> a 1&nbsp;m rod pivoted at one end has a 5&nbsp;N force applied perpendicular to it at the far end. Compute the torque about the pivot, and — given a rod moment of inertia <code>I</code> — write the resulting angular acceleration.</li>
+            <li><strong>ODEs:</strong> given <code>dx/dt = -2x</code>, <code>x(0) = 10</code>, solve it analytically, then hand-propagate three steps of Euler's method with <code>Δt = 0.1</code> and compare to the analytical answer at <code>t = 0.3</code>.</li>
+          </ul>
+        </li>
+        <li>MATLAB warm-up: define two vectors and a 3×3 matrix, and reproduce the dot product, cross product (<code>cross()</code>), matrix-vector multiply, and transpose (<code>'</code>) from above. This is the same MATLAB fluency Day 2's <code>euler2dcm</code> function will assume.</li>
+        <li>If any objective above felt unfamiliar rather than rusty, read or watch the corresponding item below before Day 1.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=fNk_zzaMoSs&list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab">Essence of Linear Algebra</a> — 3Blue1Brown (episodes 1–4 cover vectors, linear transformations, and matrix multiplication with the best visual intuition available)</li>
+        <li><a href="https://www.khanacademy.org/math/multivariable-calculus/thinking-about-multivariable-function/x786f2022:vectors-and-matrices/a/dot-cross-products-mvc">Dot and Cross Products</a> — Khan Academy (quick reference if you just need the mechanics)</li>
+        <li><a href="https://www.youtube.com/watch?v=YX0OiToqRB0&list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr">Essence of Calculus</a> — 3Blue1Brown, episode on differential equations (also worth the full series if ODEs feel distant — it's short and builds exactly the intuition Simulink integrators rely on)</li>
+        <li><a href="https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/">Classical Mechanics</a> — MIT OpenCourseWare (8.01SC) (skim the modules on Newton's laws, torque, and rotational motion if free-body diagrams or <code>τ = Iα</code> are unfamiliar)</li>
+        <li>Wie, Bong. <em>Space Vehicle Dynamics and Control</em> — Chapter 1, mathematical preliminaries (the same rigorous backstop referenced throughout Phase 1; its opening chapter is essentially this day's syllabus in textbook form)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>None graded — this is a self-check. If you worked every problem above without hesitating, you're ready for Day 1.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="syllabus.html">← Syllabus</a>
+    <a href="day01.html">Day 01 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 00</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
