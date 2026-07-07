@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 01 — Mission Framing &amp; GNC Architecture | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 01 of 15</div>
+    <h1>Mission Framing &amp; GNC Architecture</h1>
+    <p class="lede">What problem are we solving, and what does a GNC system look like?</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">01</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Describe the roles of <strong>Guidance</strong> (where should I go?), <strong>Navigation</strong> (where am I and which way am I pointing?), and <strong>Control</strong> (how do I actuate to follow the plan?).</li>
+        <li>Trace the closed loop: sensors → state estimator → guidance/control laws → actuators → vehicle dynamics → sensors.</li>
+        <li>Explain why a TVC rocket is unstable without active control (thrust behind the CG, no fins doing the work).</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Every vehicle that steers itself — a quadcopter, a re-entry capsule, an orbital booster — runs the same three-function loop, and this course is built around learning that loop by building one. <strong>Navigation</strong> answers "where am I and which way am I pointing right now," built from noisy sensor measurements. <strong>Guidance</strong> answers "where should I be," turning a mission objective into a target state or trajectory. <strong>Control</strong> answers "what do I actuate, right now, to close the gap between the two," and outputs a physical command — in this case, a gimbal angle. A TVC rocket makes the stakes of that loop viscerally clear: with the thrust vector behind the center of gravity and no fins to provide passive aerodynamic restoring torque, the vehicle is an inverted pendulum balanced on a jet of fire. Left alone, any tiny perturbation grows without bound. Everything from Day 2 onward is in service of closing this loop: first the math to describe attitude and motion (Phase 1), then a controller and estimator that close it in simulation (Phase 2), then the same software running for real on a microcontroller (Phase 3).
+      </div>
+
+      <h4>Concept 1 — The three functions, and why they're separated</h4>
+      <p>GNC is split into three functions not by accident but because each answers a genuinely different question, on a different timescale, with different math. Keeping them conceptually separate is what makes the whole system tractable to build and debug.</p>
+      <ul>
+        <li><strong>Navigation — "where am I, and which way am I pointing?"</strong> Consumes raw sensor data (accelerometer, gyro, barometer) and produces a best estimate of the vehicle <em>state</em>: position, velocity, attitude, and angular rate. This is fundamentally an <em>estimation</em> problem — the sensors are noisy and biased, no single one gives you the full state, and you fuse them (Days 6–9, Kalman filtering). Its output is the vehicle's belief about itself.</li>
+        <li><strong>Guidance — "where should I be?"</strong> Turns the mission objective ("land upright at zero velocity") into a reference the controller can chase — a target attitude, a target trajectory, or a setpoint schedule over time. For an early TVC hop, guidance can be as simple as "hold attitude vertical"; for a landing it becomes a descent profile. Guidance is where the <em>intent</em> lives.</li>
+        <li><strong>Control — "what do I do about the gap, right now?"</strong> Takes the error between the navigation estimate and the guidance reference and computes a physical actuator command — a gimbal angle in microseconds of servo PWM. This is the tight, fast inner loop (Days 10–12, PID). Control is where <em>action</em> lives.</li>
+      </ul>
+      <p>A useful mental model: <strong>Navigation is perception, Guidance is intent, Control is action.</strong> The same decomposition runs a self-driving car, a cruise missile, and a Falcon 9 booster — only the sensors, references, and actuators change.</p>
+
+      <h4>Concept 2 — The closed loop, signal by signal</h4>
+      <p>The reason to draw the loop with units on every arrow (an explicit "Do" task below) is that the units <em>are</em> the interface contract between subsystems. If two blocks disagree about units, the loop is broken no matter how good each block is in isolation. Trace one lap:</p>
+      <ul>
+        <li><strong>Sensors → Navigation.</strong> The IMU emits specific force (m/s²) and angular rate (rad/s) in the body frame; the barometer emits pressure converted to altitude (m). All noisy, all sampled at a fixed rate.</li>
+        <li><strong>Navigation → Control.</strong> The estimator outputs a clean state estimate: attitude (rad or quaternion), angular rate (rad/s), altitude and vertical velocity (m, m/s).</li>
+        <li><strong>Guidance → Control.</strong> The reference state feeds in alongside the estimate. Control computes the <em>error</em> (estimate − reference).</li>
+        <li><strong>Control → Actuators.</strong> The control law outputs a commanded gimbal angle (rad), mapped through servo geometry to a PWM pulse width (µs).</li>
+        <li><strong>Actuators → Vehicle dynamics.</strong> The gimbaled motor produces a torque about the CG; the vehicle rotates and translates according to Newton and Euler (Days 3–5).</li>
+        <li><strong>Vehicle → Sensors.</strong> The new physical motion is what the sensors measure next cycle, and the lap repeats — typically tens to hundreds of times per second.</li>
+      </ul>
+      <p>Two ideas worth naming on Day 01 even though you'll formalize them later: the loop runs in <strong>discrete time</strong> on the real flight computer (fixed sample rate, zero-order hold between updates), and the whole point of feedback is that the loop <em>corrects its own errors</em> — a model that's slightly wrong or a gust that shoves the vehicle both get sensed and countered on the next cycle. Open-loop (no feedback) would require a perfect model and no disturbances, which never exists.</p>
+
+      <h4>Concept 3 — Why a TVC rocket is unstable (the inverted pendulum)</h4>
+      <p>This is the single most important physical intuition of the course, so make it concrete. On a traditional finned rocket, the aerodynamic center of pressure sits <em>behind</em> the center of gravity. If the rocket tips, airflow hits the fins and generates a restoring torque that pushes the nose back into the wind — the vehicle is <strong>passively stable</strong>, like a weathervane. You don't need a computer; the physics self-corrects.</p>
+      <p>A TVC rocket deliberately throws that away. It has small or no fins, and it steers by gimbaling the motor at the tail. Now the thrust acts <em>behind</em> the CG, so if the vehicle tips even slightly, the thrust line develops a moment arm that pushes it <em>further</em> over — a <strong>destabilizing</strong> torque that grows with tip angle. That is mathematically an inverted pendulum: balancing a broomstick on your palm. It is uncontrollable without active feedback, and it is unstable in the formal sense (an eigenvalue in the right half-plane, which you'll compute later). The upside of accepting this instability is authority and precision: TVC steers with equal effect at zero airspeed (on the pad, at apogee, during a powered landing) where fins do nothing. The entire reason this course needs a fast, well-tuned control loop is that the airframe will actively try to fall over the instant the loop lags or fails.</p>
+
+      <div class="callout">
+        <span class="label">Framing</span>
+        Keep one question in view all course: <em>what is the vehicle's state, and how fast is the instability trying to grow it?</em> Every later topic — attitude math, equations of motion, sensor fusion, PID tuning, discrete-time implementation — is a tool for measuring that state accurately and closing the loop faster than the inverted pendulum can diverge. If you can articulate why the rocket falls over and what each subsystem does to stop it, you understand the architecture.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Watch the BPS.space Scout F engineering video end-to-end; list every subsystem you see and which GNC function (G, N, or C) it serves.</li>
+        <li>Draw a block diagram of the full GNC loop for a TVC vehicle. Label signals with units (rad, rad/s, m/s², PWM µs). You will refine this diagram all course.</li>
+        <li>For each block in your diagram, write one sentence: what does it take in, and what does it put out? This forces you to define the interfaces before you build anything.</li>
+        <li>In one paragraph, explain to a non-engineer why the rocket needs a computer to stand up straight when a stick rocket doesn't. If you can't, re-read Concept 3.</li>
+        <li>Set up tools: MATLAB/Simulink + Aerospace Blockset, Arduino IDE, Git repo with folders <code>/notebook</code>, <code>/sim</code>, <code>/flight-software</code>, <code>/report</code>. Commit an initial README describing the project.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Conflating Guidance and Control.</strong> Guidance decides <em>where to go</em>; Control decides <em>how to get there</em>. "Hold vertical" is guidance; "gimbal 2° to correct a 5° tip" is control. Keep them in separate blocks even when guidance is trivial.</li>
+          <li><strong>Forgetting the loop is discrete.</strong> On the microcontroller nothing is continuous — you sample, compute, and command at a fixed rate. Design intuition from continuous-time textbooks has to survive discretization (Day 13).</li>
+          <li><strong>Thinking stability comes from the controller alone.</strong> The controller makes an unstable plant stable, but only if it's fast enough relative to the divergence rate. Under-sampling or too much latency and the loop can't keep up — the pendulum wins.</li>
+          <li><strong>Skipping units on the block diagram.</strong> The most common integration bug in the whole project is a units or frame mismatch at a block boundary. Label every arrow now.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://youtu.be/4OmOwSB7xP8">BPS.space — Scout F, Engineering Cut</a> — the reference build for this whole course; watch for how each subsystem maps to G, N, and C.</li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=nwgd1CV__rs">BPS.space — Modeling a Thrust Vectored Rocket in Simulink</a> (skim for where we're headed).</li>
+        <li><a href="https://www.youtube.com/watch?v=wkfEZmsQqiA&list=PLn8PRpmsu08pQBgjxYFXSsODEF3Jqmm-y">Understanding PID Control</a> (MATLAB Tech Talk) — Part 1 gives the clearest short intuition for what the "Control" block does; preview now, study in Phase 2.</li>
+        <li><a href="https://www.youtube.com/watch?v=6qV3YjFppuc&list=PLn8PRpmsu08ryYoBpEKzoMOveSTyS-h4a">Understanding Sensor Fusion and Tracking</a> (MATLAB Tech Talk) — Part 1 previews what the "Navigation" block does and why one sensor is never enough.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Guidance,_navigation,_and_control">Guidance, navigation, and control</a> (Wikipedia) — concise overview of the three-function decomposition and its history in aerospace.</li>
+        <li><a href="https://www.youtube.com/watch?v=1_UVNRUvBSA">The Falcon has landed</a> / SpaceX landing footage — a working example of exactly this loop closing a propulsive landing; motivation for the whole project.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Inverted_pendulum">Inverted pendulum</a> (Wikipedia) — the canonical unstable-plant control problem your rocket is an instance of; the cart-pole analogy makes Concept 3 rigorous.</li>
+      </ul>
+
+      <div class="deliverable"><b>Deliverable</b>GNC loop block diagram (photo or draw.io export) committed to the repo, with units on every signal and a one-sentence interface note per block; tools installed and verified; README committed.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day00.html">← Day 00</a>
+    <a href="day02.html">Day 02 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 01</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

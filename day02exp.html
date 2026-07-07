@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 02 — Coordinate Frames, Euler Angles &amp; DCMs | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 02 of 15</div>
+    <h1>Coordinate Frames, Euler Angles &amp; DCMs</h1>
+    <p class="lede">Attitude is the relationship between two frames. Get rigorous about which frames, and how to write that relationship down.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">02</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Define the <strong>body frame</strong> (fixed to the rocket) and the <strong>navigation/world/inertial frame</strong> (fixed to the launch site), and state which quantities live in which frame (gyro rates: body; gravity: world; thrust: body).</li>
+        <li>Build a rotation matrix (direction cosine matrix, DCM) from a sequence of Euler rotations; verify it is orthonormal (<code>R·Rᵀ = I</code>, det = 1).</li>
+        <li>Demonstrate gimbal lock: find the Euler-angle configuration where a degree of freedom disappears, and explain why that matters for a rocket that may pitch through 90°.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Attitude has no meaning in isolation — it is always the orientation of one frame relative to another, so the first discipline of this course is bookkeeping: know which frame every vector lives in before you write a single equation. The <strong>body frame</strong> rides with the rocket (its x-axis typically along the roll axis); the <strong>inertial/navigation frame</strong> is fixed to the launch site. A gyro reads angular rate in the body frame; gravity naturally points "down" in the inertial frame; you need both to reason about the vehicle. The <strong>direction cosine matrix</strong> is the tool that moves a vector between frames — nine numbers, only three of which are independent, built from a sequence of elementary rotations (Euler angles). Euler angles are intuitive (roll, pitch, yaw) but hide a trap: at certain orientations two of the three rotation axes become parallel and a degree of freedom vanishes — <strong>gimbal lock</strong>. For a rocket that pitches through 90° during a gravity turn, that trap is not a corner case, it's the flight profile. Today you build and test the DCM machinery by hand so that when quaternions show up tomorrow as the fix, you understand exactly what problem they solve.
+      </div>
+
+      <h4>Concept 1 — Frames, and the discipline of subscripts</h4>
+      <p>Every vector in this course carries an implicit question: <em>expressed in which frame?</em> A clean notation makes that explicit. Write <code>v_B</code> for a vector expressed in the body frame and <code>v_N</code> for the same physical vector expressed in the navigation frame. The two are related by a rotation matrix that you should also subscript: <code>v_N = R_NB · v_B</code>, read right-to-left as "take something in B and re-express it in N." The leading subscript of <code>R</code> matches the frame you end up in, the trailing subscript matches the frame you start in, and adjacent subscripts "cancel" when you chain rotations: <code>R_NB · R_BS = R_NS</code>. Adopt this convention on Day 02 and hold it for the rest of the course — most attitude bugs are silent subscript mismatches, not algebra errors.</p>
+      <p>Frame definitions for this project:</p>
+      <ul>
+        <li><strong>Navigation / inertial frame (N).</strong> Fixed to the launch pad. A common convention is ENU (East-North-Up) or NED (North-East-Down); pick one and write it down. Gravity is a constant vector in this frame (e.g. <code>[0,0,-g]</code> in ENU). For a short flight the pad frame is "inertial enough" — Earth rotation and Coriolis effects are negligible over tens of seconds and meters of travel.</li>
+        <li><strong>Body frame (B).</strong> Rigidly attached to the airframe, origin at the center of mass. Convention here: x forward (out the nose, the roll axis), y and z completing a right-handed set. The IMU measures everything in this frame — the accelerometer reads specific force along body axes, the gyro reads angular rate about body axes.</li>
+      </ul>
+      <p>The payoff of getting frames right is concrete: your controller wants attitude error in the body frame (that's where the servos act), your gravity model lives in the navigation frame, and your thrust vector is defined in the body frame. The DCM is what lets these talk to each other.</p>
+
+      <h4>Concept 2 — What a DCM actually is</h4>
+      <p>A direction cosine matrix is nothing more mysterious than a table of dot products between the axes of two frames. Entry <code>R[i][j]</code> is the cosine of the angle between axis <code>i</code> of one frame and axis <code>j</code> of the other — hence "direction cosine." Because the axes of each frame are orthonormal unit vectors, three structural properties fall out for free, and you should test all three in code:</p>
+      <ul>
+        <li><strong>Orthonormal:</strong> <code>R·Rᵀ = I</code>. The columns are mutually perpendicular unit vectors.</li>
+        <li><strong>Determinant +1:</strong> it's a proper rotation, not a reflection. (det = −1 means you accidentally flipped a handedness somewhere.)</li>
+        <li><strong>Inverse = transpose:</strong> <code>R⁻¹ = Rᵀ</code>. To reverse the direction of a transformation, just transpose — no matrix inversion needed. This is <code>R_BN = (R_NB)ᵀ</code>.</li>
+      </ul>
+      <p>These properties are also your debugging toolkit. After any DCM operation, checking <code>norm(R·Rᵀ − I)</code> against a small tolerance catches a large fraction of mistakes immediately.</p>
+
+      <h4>Concept 3 — Elementary rotations and rotation sequences</h4>
+      <p>Any orientation can be reached by three successive rotations about coordinate axes. The three elementary rotation matrices (right-handed, rotating the frame) are:</p>
+      <ul>
+        <li><strong>About x (roll, φ):</strong> leaves x alone, mixes y and z with <code>cos φ</code>, <code>sin φ</code>.</li>
+        <li><strong>About y (pitch, θ):</strong> leaves y alone, mixes z and x.</li>
+        <li><strong>About z (yaw, ψ):</strong> leaves z alone, mixes x and y.</li>
+      </ul>
+      <p>The full DCM is the product of three of these. <strong>Order matters</strong> — rotation is non-commutative, so a 3-2-1 (yaw-then-pitch-then-roll) sequence gives a different matrix than 1-2-3. Aerospace almost universally uses the <strong>3-2-1 (ZYX) yaw-pitch-roll</strong> sequence: <code>R = Rx(φ)·Ry(θ)·Rz(ψ)</code> for the body-from-nav mapping. Two rules that save hours of confusion: (1) always state your sequence explicitly in comments and reports, and (2) be consistent about whether your elementary matrices rotate the <em>frame</em> (passive) or the <em>vector</em> (active) — they are transposes of each other, and mixing the two is the single most common source of sign errors.</p>
+
+      <h4>Concept 4 — Gimbal lock, concretely</h4>
+      <p>In the 3-2-1 sequence, gimbal lock occurs at pitch <code>θ = ±90°</code>. At that orientation the first and third rotation axes (yaw and roll) align, so yawing and rolling produce the same motion — you've lost the ability to distinguish them, and the mapping from angles to orientation is no longer one-to-one. Mathematically, <code>dcm2euler</code> divides by <code>cos θ</code> somewhere; at 90° that's a division by zero. Physically, a rocket doing a gravity turn from vertical to horizontal passes straight through pitch = 90°. This is exactly why the course moves to quaternions tomorrow: they parametrize the same rotations with four numbers and one constraint, and have no singular orientations anywhere. Today's job is to <em>feel</em> the failure — drive your <code>euler2dcm</code>/<code>dcm2euler</code> round-trip toward θ = 90° and watch the recovered yaw and roll become garbage while the DCM itself stays perfectly well-behaved.</p>
+
+      <div class="callout">
+        <span class="label">Worked check</span>
+        A quick numerical target for your worksheet: a rocket pitched <code>θ = 20°</code> and yawed <code>ψ = 10°</code> (roll = 0), gravity in the ENU nav frame is <code>g_N = [0, 0, −9.81]</code>. Using the 3-2-1 convention, the gravity vector expressed in the body frame is approximately <code>g_B = R_BN · g_N ≈ [3.36, 0.00, −9.22]</code> m/s². The forward (x-body) component being positive and non-trivial is the accelerometer signature of a nose-up attitude — sanity-check your hand calculation against this before trusting the MATLAB version.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Worksheet: given a rocket pitched 20° and yawed 10°, express the gravity vector in the body frame by hand, then confirm in MATLAB. (Target above.)</li>
+        <li>Write MATLAB functions <code>euler2dcm</code> and <code>dcm2euler</code>; round-trip random angles and check the error.</li>
+        <li>Add three assertion checks to <code>euler2dcm</code>'s output: <code>R·Rᵀ ≈ I</code>, <code>det(R) ≈ 1</code>, and <code>R⁻¹ ≈ Rᵀ</code>. Fail loudly if any is violated.</li>
+        <li>Sweep pitch from 0° toward 90° and plot the round-trip yaw error — locate gimbal lock empirically and note the pitch angle where error explodes.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Degrees vs radians.</strong> MATLAB trig functions take radians; use <code>sind</code>/<code>cosd</code> or convert with <code>deg2rad</code>. A silent unit mismatch produces plausible-looking garbage.</li>
+          <li><strong>Active vs passive rotation.</strong> Decide whether your matrix rotates vectors or reframes them, and never mix the two in one pipeline. When in doubt, test on a known case (rotate a unit-x vector 90° about z and confirm it lands where you expect).</li>
+          <li><strong>Rotation order.</strong> <code>Rx·Ry·Rz ≠ Rz·Ry·Rx</code>. State the sequence in every function's header comment.</li>
+          <li><strong>atan2 vs atan.</strong> In <code>dcm2euler</code>, always use <code>atan2</code> (four-quadrant) to recover angles, or you'll lose sign information and quadrant.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="http://www.starlino.com/dcm_tutorial.html">DCM Tutorial — An Introduction to Orientation Kinematics</a> (starlino) — intuitive, IMU-oriented, ties directly to your accelerometer/gyro hardware.</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 attitude slides</li>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — attitude kinematics chapter (course reserve). The authoritative reference for the notation used here.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Rotation_matrix">Rotation matrix</a> (Wikipedia) — clean statement of the three elementary matrices and their products; good for double-checking signs.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Euler_angles">Euler angles</a> (Wikipedia) — the full taxonomy of rotation sequences (proper Euler vs Tait-Bryan) and why aerospace uses 3-2-1.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Gimbal_lock">Gimbal lock</a> (Wikipedia) — includes the classic Apollo-11 anecdote and clear diagrams of the collapsing degree of freedom.</li>
+        <li><a href="https://www.youtube.com/watch?v=zc8b2Jo7mno">Euler (gimbal lock) explained</a> — GuerrillaCG's short, visual, widely-cited animation of what gimbal lock looks like.</li>
+        <li><a href="https://www.mathworks.com/help/aerotbx/ug/angle2dcm.html">MATLAB <code>angle2dcm</code> / <code>dcm2angle</code></a> (Aerospace Toolbox) — the built-in you're re-implementing by hand; compare your functions against it once yours pass their assertions.</li>
+        <li><a href="https://eater.net/quaternions">Visualizing quaternions</a> (Ben Eater + 3Blue1Brown) — optional preview of tomorrow's fix; watch after you've felt gimbal lock today.</li>
+      </ul>
+
+      <div class="deliverable"><b>Deliverable</b>Completed frame-rotation worksheet + verified <code>euler2dcm</code>/<code>dcm2euler</code> functions with test script (including the three orthonormality assertions and a gimbal-lock sweep plot).</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day01.html">← Day 01</a>
+    <a href="day03.html">Day 03 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 02</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
