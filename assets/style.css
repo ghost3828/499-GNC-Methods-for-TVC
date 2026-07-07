@@ -170,6 +170,7 @@ code{
 .timeline{ margin:26px 0 8px; }
 .timeline-track{ display:flex; gap:6px; }
 .tl-phase{ flex:1; }
+.tl-phase.p0{ flex:0 0 15%; }
 .tl-phase a{ text-decoration:none; color:inherit; }
 .tl-bar{ display:flex; gap:3px; margin-bottom:8px; }
 .tl-day{
@@ -179,6 +180,7 @@ code{
   opacity:.92;
 }
 .tl-day:hover{ opacity:1; outline:2px solid rgba(255,255,255,.6); outline-offset:-2px; }
+.p0 .tl-day{ background:var(--muted); border:1px dashed rgba(255,255,255,.5); }
 .p1 .tl-day{ background:var(--accent); }
 .p2 .tl-day{ background:var(--steel); }
 .p3 .tl-day{ background:var(--olive); }
