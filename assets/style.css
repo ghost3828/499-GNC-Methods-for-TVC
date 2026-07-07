@@ -52,13 +52,13 @@ body{
 }
 .site-logo{
   position:absolute; top:50%; transform:translateY(-50%);
-  height:38px; width:38px; object-fit:cover; border-radius:8px;
+  height:48px; width:48px; object-fit:cover; border-radius:10px;
   z-index:51;
 }
-.site-logo-left{ left:14px; }
-.site-logo-right{ right:14px; }
+.site-logo-left{ left:12px; }
+.site-logo-right{ right:12px; }
 .topbar-inner{
-  max-width:1060px; margin:0 auto; padding:0 64px;
+  max-width:1060px; margin:0 auto; padding:0 72px;
   display:flex; align-items:center; justify-content:space-between;
   flex-wrap:wrap; gap:4px 18px; min-height:56px;
 }
@@ -74,7 +74,7 @@ body{
   display:inline-block;
 }
 .brand .brand-sub{
-  font-family:var(--mono); font-weight:400; font-size:.62rem;
+  font-family:var(--mono); font-weight:700; font-size:.72rem;
   letter-spacing:.18em; color:#9FB1C2; margin-left:2px;
 }
 .topbar nav{ display:flex; flex-wrap:wrap; gap:2px; padding:6px 0; }
