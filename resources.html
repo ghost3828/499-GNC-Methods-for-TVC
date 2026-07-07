@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html">Phase 2</a>
-      <a href="phase3.html">Phase 3</a>
       <a href="hardware.html">Hardware</a>
       <a href="resources.html" class="active">Resources</a>
     </nav>
@@ -71,17 +70,22 @@
   <h2>Controls</h2>
   <ul class="ref-list">
     <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=wkfEZmsQqiA&list=PLn8PRpmsu08pQBgjxYFXSsODEF3Jqmm-y">Understanding PID Control</a> — Brian Douglas, MATLAB Tech Talks</li>
-    <li><a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Brett Beauregard
-      <span class="note">The definitive walk from textbook PID to an implementation that survives real hardware. Its lessons are baked into the widely used Arduino PID library ("Arduino PID" is a productive search).</span></li>
+    <li><a href="https://github.com/br3ttb/Arduino-PID-Library">Arduino PID Library</a> — Brett Beauregard
+      <span class="note">The reference implementation of "Improving the Beginner's PID" — the original blog series is unreliable, but its lessons (sample time, derivative-on-measurement, integrator clamping) are baked directly into this widely used, actively maintained library. Read the source and comments.</span></li>
+    <li><a href="https://www.mathworks.com/help/simulink/slref/anti-windup-control-using-a-pid-controller.html">Anti-Windup Control Using a PID Controller</a> — MathWorks documentation</li>
     <li><a href="https://www.youtube.com/user/ControlLectures">Brian Douglas — Control System Lectures</a></li>
     <li><a href="https://www.youtube.com/c/Eigensteve">Steve Brunton — eigensteve</a>
       <span class="note">Control Bootcamp and beyond — the deeper theory behind the stretch goals (LQR, state-space methods).</span></li>
+    <li>Franklin, Powell &amp; Emami-Naeini. <em>Feedback Control of Dynamic Systems</em>
+      <span class="note">A rigorous backstop for Phase 2, the controls counterpart to Wie for Phase 1 — root locus, frequency response, and state-space design beyond PID.</span></li>
   </ul>
 
   <h2>Navigation &amp; Estimation</h2>
   <ul class="ref-list">
     <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=6qV3YjFppuc&list=PLn8PRpmsu08ryYoBpEKzoMOveSTyS-h4a">Understanding Sensor Fusion and Tracking</a> — MATLAB Tech Talks</li>
     <li><a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">A Practical Approach to Kalman Filter and How to Implement It</a> — TKJ Electronics</li>
+    <li><a href="https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python">Kalman and Bayesian Filters in Python</a> — Roger R. Labbe Jr.
+      <span class="note">Free, interactive (Jupyter) book. Goes well beyond the TKJ tutorial if the Day 9/13 Kalman filter stretch goal grabs you.</span></li>
   </ul>
 
   <h2>Embedded &amp; Hardware</h2>
@@ -89,6 +93,9 @@
     <li><span class="tag tag-start">Start here</span> <a href="https://www.arduino.cc/en/Tutorial/BuiltInExamples/BlinkWithoutDelay">Arduino — Blink Without Delay</a>
       <span class="note">The single most important embedded pattern in this course: non-blocking, fixed-rate loops.</span></li>
     <li><a href="https://www.arduino.cc/">arduino.cc</a> — language and library reference</li>
+    <li><a href="https://www.pjrc.com/teensy/teensyduino.html">Teensyduino</a>
+      <span class="note">The Arduino IDE add-on that targets the Teensy 4.0. Install this before Day 11.</span></li>
+    <li><a href="https://learn.adafruit.com/adafruit-9-dof-orientation-imu-fusion-breakout-bno085">Adafruit BNO085 guide</a> and <a href="https://learn.adafruit.com/adafruit-bmp388-bmp390-bmp3xx">Adafruit BMP390 guide</a> — wiring, libraries, and example sketches for Day 12</li>
     <li><a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How Servo Motors Work &amp; How to Interface Them with Arduino</a></li>
     <li><a href="https://github.com/peregrine-developments/Orientation">Orientation — Arduino quaternion library</a>
       <span class="note">Untested by the instructor. Verify against your own MATLAB results before trusting it in the loop.</span></li>

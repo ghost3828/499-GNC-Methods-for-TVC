@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html">Phase 2</a>
-      <a href="phase3.html" class="active">Phase 3</a>
       <a href="hardware.html">Hardware</a>
       <a href="resources.html">Resources</a>
     </nav>
@@ -30,7 +29,7 @@
 <div class="content">
 
   <section class="flightstrip">
-    <div class="strip-row"><a href="phase3.html">Phase 03</a> · Day 12 of 15</div>
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 12 of 15</div>
     <h1>Sensor Bring-Up: IMU + Barometer over I&sup2;C</h1>
     <p class="lede">Navigation inputs. Get clean, correctly-scaled, correctly-signed data before you trust a single computed angle.</p>
   </section>
@@ -41,7 +40,7 @@
       <h4>Objectives</h4>
       <ul>
         <li>Understand the two serial buses you're using: <strong>I²C</strong> (sensors, shared two-wire bus, addresses) and <strong>UART/Serial</strong> (telemetry to the laptop).</li>
-        <li>Bring up the ISM330DHCX (gyro + accel) and BMP581 (baro) on the Qwiic bus; configure ranges and output data rates deliberately (gyro range must cover expected body rates; ODR ≥ your loop rate).</li>
+        <li>Bring up the BNO085 (gyro + accel + mag) and BMP390 (baro) on the STEMMA QT / Qwiic-compatible I²C bus; configure ranges and output data rates deliberately (gyro range must cover expected body rates; ODR ≥ your loop rate).</li>
         <li>Verify axes and signs against the datasheet: physically rotate the board about each axis and confirm the sign convention matches the body frame in your sim. Sign errors here are the classic "controller fights itself" bug.</li>
         <li>Characterize the real sensors: log 60 s of stationary data; compute gyro bias and noise standard deviation; compare against the datasheet numbers you used in the Day 8 sim.</li>
       </ul>
@@ -59,7 +58,7 @@
       </ul>
       <h4>Read / Watch</h4>
       <ul>
-        <li><a href="https://www.sparkfun.com/products/19764">ISM330DHCX</a> and <a href="https://www.sparkfun.com/products/20170">BMP581</a> SparkFun hookup guides (linked from each product page)</li>
+        <li><a href="https://learn.adafruit.com/adafruit-9-dof-orientation-imu-fusion-breakout-bno085">Adafruit BNO085</a> and <a href="https://learn.adafruit.com/adafruit-bmp388-bmp390-bmp3xx">Adafruit BMP390</a> guides</li>
       </ul>
       <div class="deliverable"><b>Deliverable</b>Live gyro/accel/baro telemetry at loop rate; stationary-log characterization table (bias, σ) vs. datasheet; sim noise model updated.</div>
     </div>
@@ -76,7 +75,7 @@
 <footer>
   <div class="foot-inner">
     <span>GNC Methods for Thrust Vector Control · Day 12</span>
-    <span><a href="phase3.html">Phase 03 flight plan</a></span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
   </div>
 </footer>
 

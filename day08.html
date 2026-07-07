@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html" class="active">Phase 2</a>
-      <a href="phase3.html">Phase 3</a>
       <a href="hardware.html">Hardware</a>
       <a href="resources.html">Resources</a>
     </nav>
@@ -30,7 +29,7 @@
 <div class="content">
 
   <section class="flightstrip">
-    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 08 of 15</div>
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 08 of 15</div>
     <h1>Sensor Models</h1>
     <p class="lede">Your controller has been reading truth. Real flight computers never get truth — they get an IMU.</p>
   </section>
@@ -52,7 +51,7 @@
 
       <h4>Do</h4>
       <ul>
-        <li>Build the <code>Sensors</code> subsystem: truth in → noisy, biased, sampled measurements out. Parameterize noise levels from the ISM330DHCX and BMP581 datasheets (see <a href="hardware.html">hardware</a>).</li>
+        <li>Build the <code>Sensors</code> subsystem: truth in → noisy, biased, sampled measurements out. Parameterize noise levels from the BNO085 and BMP390 datasheets (see <a href="hardware.html">hardware</a>).</li>
         <li>Feed raw gyro-integrated attitude to your controller and watch performance degrade; quantify the attitude drift rate for your chosen bias.</li>
         <li>Notebook entry: which sensor errors matter most for a 10–30 second flight, and which can you ignore?</li>
       </ul>
@@ -76,7 +75,7 @@
 <footer>
   <div class="foot-inner">
     <span>GNC Methods for Thrust Vector Control · Day 08</span>
-    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
   </div>
 </footer>
 

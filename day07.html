@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html" class="active">Phase 2</a>
-      <a href="phase3.html">Phase 3</a>
       <a href="hardware.html">Hardware</a>
       <a href="resources.html">Resources</a>
     </nav>
@@ -30,7 +29,7 @@
 <div class="content">
 
   <section class="flightstrip">
-    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 07 of 15</div>
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 07 of 15</div>
     <h1>Actuators, Limits &amp; Discrete-Time Flight Software</h1>
     <p class="lede">Real servos are slow, limited, and sampled. Restructure the model so the flight software runs the way it will on the Arduino.</p>
   </section>
@@ -59,8 +58,9 @@
       </ul>
       <h4>Read / Watch</h4>
       <ul>
-        <li><span class="tag tag-start">Start here</span> <a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Brett Beauregard (read the whole series; it is exactly the discrete-implementation wisdom you need)</li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://github.com/br3ttb/Arduino-PID-Library">Arduino PID Library</a> — Brett Beauregard (read the source and comments; it is exactly the discrete-implementation wisdom you need — sample time, derivative-on-measurement, integrator clamping)</li>
         <li>Understanding PID Control — remaining episodes (anti-windup, derivative filtering)</li>
+        <li><a href="https://www.mathworks.com/help/simulink/slref/anti-windup-control-using-a-pid-controller.html">Anti-Windup Control Using a PID Controller</a> — MathWorks documentation</li>
       </ul>
       <div class="deliverable"><b>Deliverable</b>Discrete-time flight-software subsystem @ 100 Hz with ZOH; sample-rate sweep plot; anti-windup demonstration.</div>
     </div>
@@ -77,7 +77,7 @@
 <footer>
   <div class="foot-inner">
     <span>GNC Methods for Thrust Vector Control · Day 07</span>
-    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
   </div>
 </footer>
 

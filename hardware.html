@@ -12,14 +12,13 @@
 <body>
 
 <header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
     <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
-      <a href="phase1.html">Phase 1</a>
-      <a href="phase2.html">Phase 2</a>
-      <a href="phase3.html">Phase 3</a>
       <a href="hardware.html" class="active">Hardware</a>
       <a href="resources.html">Resources</a>
     </nav>
@@ -36,7 +35,7 @@
       Everything needed for the Phase 3 benchtop flight computer, plus the airframe components a
       follow-on flight project would use. COTS = commercial off-the-shelf. Prices and stock drift —
       verify before ordering, and substitute equivalents freely as long as the sensor interfaces
-      (I²C/Qwiic) stay the same.
+      (I²C / STEMMA QT, Qwiic-compatible) stay the same.
     </p>
   </section>
 
@@ -45,49 +44,39 @@
     <thead><tr><th>Item</th><th>Part</th><th>Role in the study</th></tr></thead>
     <tbody>
       <tr>
-        <td>Microcontroller + starter kit</td>
-        <td><a href="https://www.sparkfun.com/products/15267">SparkFun Inventor's Kit (RedBoard)</a><br><span class="mono">KIT-15267</span></td>
-        <td>Arduino-compatible dev board, breadboard, jumpers, a hobby servo, and guided circuits for Day 11. Note: v4.1 is retired — order the current revision (v4.1.2, <span class="mono">KIT-21301</span>) or any Arduino Uno–class board.</td>
+        <td>Microcontroller</td>
+        <td><a href="https://www.pjrc.com/store/teensy40.html">Teensy 4.0</a><br><span class="mono">PJRC — Teensy 4.0</span></td>
+        <td>600 MHz ARM Cortex-M7 flight computer, programmed through the Arduino IDE via Teensyduino. Pair it with a breadboard, jumper wires, and a hobby servo (any basic prototyping kit) for Day 11's guided circuits.</td>
       </tr>
       <tr>
         <td>IMU (gyro + accelerometer)</td>
-        <td><a href="https://www.sparkfun.com/products/19764">SparkFun 6DoF IMU — ISM330DHCX (Qwiic)</a><br><span class="mono">SEN-19764</span></td>
-        <td>The navigation heart: 3-axis gyro (angular velocity, body frame) + 3-axis accelerometer (specific force). Days 12–14. High output data rates comfortably support the 100 Hz loop.</td>
+        <td><a href="https://www.adafruit.com/product/4754">Adafruit 9-DOF Orientation IMU Fusion Breakout — BNO085 (BNO080)</a><br><span class="mono">Adafruit 4754</span></td>
+        <td>The navigation heart: 3-axis gyro (angular velocity, body frame) + 3-axis accelerometer (specific force) + magnetometer, with an onboard sensor-fusion coprocessor. Days 12–14. Read the raw gyro/accel for your own complementary/Kalman filter (Days 9 &amp; 13), and optionally compare against its onboard fused quaternion output as a sanity check.</td>
       </tr>
       <tr>
         <td>Barometric pressure sensor</td>
-        <td><a href="https://www.sparkfun.com/products/20170">SparkFun Pressure Sensor — BMP581 (Qwiic)</a><br><span class="mono">SEN-20170</span></td>
+        <td><a href="https://www.adafruit.com/product/4816">Adafruit BMP390</a><br><span class="mono">Adafruit 4816</span></td>
         <td>Altitude AGL from pressure; very low noise. Used for altitude logging on the bench and essential for any future altitude-hold guidance.</td>
-      </tr>
-      <tr>
-        <td>Qwiic cables</td>
-        <td><a href="https://www.sparkfun.com/products/15081">SparkFun Qwiic Cable Kit</a><br><span class="mono">KIT-15081</span></td>
-        <td>Solder-free, polarized I²C daisy-chain between the board and both sensors. Eliminates the most common wiring bugs on Day 12.</td>
       </tr>
       <tr>
         <td>TVC servos (2×)</td>
         <td><a href="https://www.blue-bird-model.com/products_detail/73.htm">Blue Bird micro servos</a> (BPS.space's choice)</td>
-        <td>Pitch and yaw gimbal actuation. The kit servo works for Day 14's single-axis bench demo; these are the flight-grade upgrade.</td>
+        <td>Pitch and yaw gimbal actuation. A basic hobby servo works for Day 14's single-axis bench demo; these are the flight-grade upgrade.</td>
       </tr>
       <tr>
         <td>Storage (optional)</td>
         <td>MicroSD breakout or onboard flash</td>
         <td>Flight data logging when a USB tether isn't available. Serial-to-laptop logging is sufficient for this study.</td>
       </tr>
-      <tr>
-        <td>Rangefinder (optional)</td>
-        <td><a href="https://www.sparkfun.com/products/18009">LIDAR distance sensor</a></td>
-        <td>Precise low-altitude AGL measurement. BPS.space doesn't use one, but it's a promising instructor-suggested addition — a good stretch investigation.</td>
-      </tr>
     </tbody>
   </table>
 
   <div class="callout steel">
     <span class="label">Wiring notes</span>
-    Both sensors share one Qwiic (I²C) chain: board → IMU → barometer. Confirm each device's I²C
-    address with an I²C scanner sketch on Day 12 before debugging anything else. Servos draw more
-    current than a USB port likes under load — power them from a separate 5&nbsp;V supply or battery
-    pack with <strong>common ground</strong> to the microcontroller.
+    Both sensors share one STEMMA QT / Qwiic-compatible I²C chain: Teensy → IMU → barometer.
+    Confirm each device's I²C address with an I²C scanner sketch on Day 12 before debugging anything
+    else. Servos draw more current than a USB port likes under load — power them from a separate
+    5&nbsp;V supply or battery pack with <strong>common ground</strong> to the microcontroller.
   </div>
 
   <h2>Airframe &amp; TVC Mechanism</h2>
@@ -114,7 +103,7 @@
   </ul>
 
   <div class="pagenav">
-    <a href="phase3.html">← Phase 3</a>
+    <a href="day15.html">← Day 15</a>
     <a href="resources.html">Reference library →</a>
   </div>
 
