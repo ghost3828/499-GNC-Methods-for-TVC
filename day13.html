@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 13 — Real-Time Attitude Estimation on Hardware | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html" class="active">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase3.html">Phase 03</a> · Day 13 of 15</div>
+    <h1>Real-Time Attitude Estimation on Hardware</h1>
+    <p class="lede">Port the Day 9 estimator. The board should know which way is up — and keep knowing it while you wave it around.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">13</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Implement quaternion integration of the gyro at 100 Hz (fixed-step, renormalize each cycle) — the discrete twin of your Day 3 script.</li>
+        <li>Add startup gyro-bias calibration: average N samples while stationary, subtract thereafter. Quantify the drift improvement.</li>
+        <li>Implement the complementary filter correction from the accelerometer (valid on the bench, where specific force ≈ gravity).</li>
+        <li>Validate against physical truth: rest the board at known angles (level, 30°, 45°, 90° using a protractor/angle block) and record estimator error; do fast slews and confirm it recovers.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        This is where three earlier days converge: Day 3's quaternion kinematics, Day 9's complementary filter, and Day 12's clean, characterized sensor data all get assembled into a navigation function running for real, at 100 Hz, on the loop skeleton from Day 11. The quaternion integration step is the discrete twin of the MATLAB script from Day 3 — same math, fixed-step, renormalized every cycle — and the complementary filter correction is the same blend derived Day 9, now valid because on the bench, at rest, specific force really is gravity. One addition earns its keep immediately: startup bias calibration, averaging the gyro over a few stationary seconds at boot and subtracting that estimate thereafter, which directly attacks the linear drift problem from Day 8. The only way to know any of this actually works is to check it against ground truth you can independently verify — rest the board at known, physically-measured angles and read off the estimator's error, then move it quickly and confirm it tracks and recovers rather than lagging or diverging. This is also where the untested peregrine-developments Orientation library, flagged back on Day 3, gets its verification: if you're tempted to use it instead of your own quaternion math, today's known-angle table is exactly the check it needs to pass first.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Port your estimator into the skeleton. Writing the quaternion math yourself is preferred; if you adopt the <a href="https://github.com/peregrine-developments/Orientation">Orientation library</a>, first verify it against your own MATLAB results — it's untested by the instructor.</li>
+        <li>Stream estimated Euler angles to the serial plotter; capture the known-angle validation table.</li>
+        <li>Run the drift test: 5 minutes stationary — how far does the estimate wander with and without the accelerometer correction?</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Re-read the <a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">TKJ Kalman/complementary filter tutorial</a> — this time as an implementer</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Estimator running at 100 Hz on hardware; known-angle validation table; drift comparison plot.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day12.html">← Day 12</a>
+    <a href="day14.html">Day 14 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 13</span>
+    <span><a href="phase3.html">Phase 03 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

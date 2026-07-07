@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 06 — PID Control — First Closed Loop | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html" class="active">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 06 of 15</div>
+    <h1>PID Control — First Closed Loop</h1>
+    <p class="lede">Close the loop on the ideal plant with perfect state knowledge. Learn what each gain buys you and what it costs.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">06</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Explain the P, I, and D terms physically for attitude control: P = spring stiffness on angle error, D = damping on angle rate, I = trim against steady disturbances (e.g., motor misalignment, CG offset).</li>
+        <li>Tune a PD (then PID) controller mapping pitch error → gimbal command, and characterize it: rise time, overshoot, settling time, disturbance rejection.</li>
+        <li>Show the classic failure modes on purpose: too much P (oscillation), too much D (noise amplification — foreshadowing Day 8), too much I (windup and slow oscillation).</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Phase 1 built a vehicle that falls over on its own; Phase 2 starts making it stand up. Today's controller runs against the <em>ideal</em> plant — continuous time, perfect knowledge of true attitude — precisely so that any bad behavior you see is the controller's, not confused with sensor noise or discretization effects that arrive later this week. PID is the workhorse of the whole field because each term has a physical read: proportional gain acts like a torsional spring pulling attitude error back to zero, derivative gain acts like a damper resisting angular rate (killing oscillation before it starts), and integral gain slowly trims out steady disturbances a spring and damper alone can't — a CG offset or slight motor misalignment that would otherwise leave a permanent pointing error. Push each gain too far and you get a named failure mode worth seeing on purpose now: too much P oscillates, too much D amplifies noise (a preview of Day 8, once real sensors show up), too much I causes windup and a slow secondary oscillation. The gain-tuning table you build today, with rise time, overshoot, and settling time for each test case, isn't just homework — it's the baseline every later change (actuator limits, discrete time, sensor noise, the estimator) gets compared against.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Add a <code>Controller</code> block inside Flight Software (continuous for today). Feed it true attitude from the plant.</li>
+        <li>Test cases: (a) start 5° off vertical, command vertical; (b) step attitude command of 5° mid-burn; (c) impulse disturbance torque ("wind gust") — plot θ and δ for each.</li>
+        <li>Tuning study: build a small table of gain sets vs. response metrics. Keep it — it goes in the MR-2 package and the final report.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=wkfEZmsQqiA&list=PLn8PRpmsu08pQBgjxYFXSsODEF3Jqmm-y">Understanding PID Control</a> — Brian Douglas, MATLAB Tech Talks (episodes 1–4 today)</li>
+        <li><a href="https://www.youtube.com/user/ControlLectures">Brian Douglas — Control System Lectures</a> (reference as needed)</li>
+        <li><a href="https://www.youtube.com/watch?v=jrrC53Lru9I">TVC Rocket PID Tuning in Simulink</a> (compare their tuning process to yours)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Closed-loop model on the ideal plant; gain-tuning table with response plots for the three test cases.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day05.html">← Day 05</a>
+    <a href="day07.html">Day 07 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 06</span>
+    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 14 — Servos, Controller Port &amp; the Benchtop Closed Loop | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html" class="active">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase3.html">Phase 03</a> · Day 14 of 15</div>
+    <h1>Servos, Controller Port &amp; the Benchtop Closed Loop</h1>
+    <p class="lede">Actuation, then the moment of truth: tilt the vehicle and watch the gimbal push back.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">14</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Drive hobby servos with the Servo library / PWM; map gimbal angle δ ↔ servo microseconds, including linkage geometry, direction, and software travel limits that protect the mount.</li>
+        <li>Port the Day 7 discrete PID — identical gains, sample rate, saturation, and anti-windup — from Simulink into C.</li>
+        <li>Close the loop on the bench: mount the flight computer on (or with) the TVC assembly, command "vertical," and demonstrate that tilting the assembly drives a correcting gimbal deflection in the right direction, promptly, without oscillation.</li>
+        <li>Compare against sim: apply an attitude step on the bench, log the response, and overlay it on the equivalent Simulink run. Explain the differences (servo lag? linkage slop? estimator lag? loop jitter?).</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Every piece is now in place — a scheduled 100 Hz loop (Day 11), clean characterized sensors (Day 12), and a validated real-time estimator (Day 13) — except the one that turns knowledge into action. Today adds actuation and closes the loop for real. Driving the servo is mostly geometry: mapping the gimbal angle δ your controller commands to a PWM pulse width in microseconds, respecting the actual linkage direction and travel limits so software can't command the mount into itself. The control law itself should not be reinvented — port the exact discrete PID from Day 7, same gains, same sample rate, same saturation and anti-windup logic, because the entire value of this exercise is a fair, like-for-like comparison between simulated and physical behavior. When you finally mount the flight computer with the TVC assembly and tip it by hand, the gimbal correcting promptly, in the right direction, without oscillating, is the payoff of every day since Day 1. It almost never matches simulation exactly on the first try, and that's expected, not a failure: servo lag, linkage slop, estimator lag, and loop jitter each leave a distinct fingerprint on a step-response overlay, and diagnosing which one you're looking at — using the log data, like an engineer, not a guess — is exactly the skill MR-3 is designed to test.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Servo checkout first with sensors out of the loop: sweep commands, verify limits and center.</li>
+        <li>Then close the loop. Debug with the Day 10 suspect list. If it oscillates or diverges, that's Exhibit A for the report — diagnose it like an engineer, in the log data.</li>
+        <li>Rehearse the MR-3 demo end-to-end once today, not tomorrow.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How Servo Motors Work &amp; How to Interface Them with Arduino</a></li>
+        <li><a href="https://youtu.be/4OmOwSB7xP8?t=4275">BPS.space Scout F — TVC hardware section</a></li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Benchtop closed loop working; logged bench step response overlaid on the simulated one, with a written explanation of the differences.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day13.html">← Day 13</a>
+    <a href="day15.html">Day 15 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 14</span>
+    <span><a href="phase3.html">Phase 03 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

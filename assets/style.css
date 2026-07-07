@@ -163,7 +163,7 @@ code{
 .timeline{ margin:26px 0 8px; }
 .timeline-track{ display:flex; gap:6px; }
 .tl-phase{ flex:1; }
-.tl-phase a{ text-decoration:none; color:inherit; display:block; }
+.tl-phase a{ text-decoration:none; color:inherit; }
 .tl-bar{ display:flex; gap:3px; margin-bottom:8px; }
 .tl-day{
   flex:1; height:34px; border-radius:3px; position:relative;
@@ -171,10 +171,11 @@ code{
   font-family:var(--mono); font-size:.6rem; color:#fff; padding-bottom:3px;
   opacity:.92;
 }
-.tl-phase:hover .tl-day{ opacity:1; }
+.tl-day:hover{ opacity:1; outline:2px solid rgba(255,255,255,.6); outline-offset:-2px; }
 .p1 .tl-day{ background:var(--accent); }
 .p2 .tl-day{ background:var(--steel); }
 .p3 .tl-day{ background:var(--olive); }
+.tl-label{ display:block; }
 .tl-day.review::after{
   content:""; position:absolute; top:4px; left:50%; transform:translateX(-50%);
   width:6px; height:6px; border-radius:50%; background:#fff;

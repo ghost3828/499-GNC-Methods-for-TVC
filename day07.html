@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 07 — Actuators, Limits &amp; Discrete-Time Flight Software | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html" class="active">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 07 of 15</div>
+    <h1>Actuators, Limits &amp; Discrete-Time Flight Software</h1>
+    <p class="lede">Real servos are slow, limited, and sampled. Restructure the model so the flight software runs the way it will on the Arduino.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">07</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Model the TVC servo: angle saturation (±5°), rate limit, and a first-order lag or transport delay. Observe the phase lag it adds and what that does to your margins.</li>
+        <li>Explain continuous vs. discrete time: the analysis lives in continuous time, but <strong>everything on a microcontroller is discrete</strong>. Convert your controller to run at a fixed sample rate (start at 100 Hz) behind <strong>zero-order holds</strong>.</li>
+        <li>Find the breaking point: lower the sample rate (100 → 50 → 25 → 10 Hz) until the loop destabilizes, and connect that to the phase lag of sampling (≈ half a sample period plus compute delay).</li>
+        <li>Implement anti-windup: clamp or back-calculate the integrator when the gimbal saturates.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Yesterday's controller lived in a fantasy: infinite actuator authority, continuous time, zero delay. Today you take away each of those comforts, one at a time, because the gap between "works in theory" and "works on hardware" is exactly the set of effects introduced here. A real servo saturates at some maximum angle, can't slew infinitely fast, and lags the command slightly — each of these eats into your stability margin, and the point of modeling them now (not in Phase 3, when debugging is much harder) is to see that erosion in a place where you can plot it. The bigger conceptual shift is continuous vs. discrete time: your Simulink analysis so far has been continuous, but a microcontroller only ever knows the world at discrete instants, sampling in, computing, and holding its output constant until the next tick — a <strong>zero-order hold</strong>. That hold is itself a source of phase lag (roughly half a sample period), which is why lowering the sample rate eventually destabilizes a loop that was perfectly stable in continuous time; finding that breaking point by sweeping the rate down is the fastest way to build intuition for why 100 Hz is the number this course starts with. Restructuring the flight software into this exact discrete, ZOH-sampled form today is what makes the eventual Arduino port in Phase 3 a direct translation instead of a redesign.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Restructure the top level per the recommended architecture: continuous Plant + Actuator, discrete Flight Software subsystem sampled through ZOH blocks. This structure is non-negotiable — it is what makes the Phase 3 port honest.</li>
+        <li>Re-tune gains for the discrete, saturated loop. Document what changed and why.</li>
+        <li>Demonstrate windup with and without your anti-windup fix during a large attitude command.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Brett Beauregard (read the whole series; it is exactly the discrete-implementation wisdom you need)</li>
+        <li>Understanding PID Control — remaining episodes (anti-windup, derivative filtering)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Discrete-time flight-software subsystem @ 100 Hz with ZOH; sample-rate sweep plot; anti-windup demonstration.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day06.html">← Day 06</a>
+    <a href="day08.html">Day 08 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 07</span>
+    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

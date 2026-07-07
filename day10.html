@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — Integration, Robustness &amp; the 6DOF Stretch | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html" class="active">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 10 of 15 · Milestone</div>
+    <h1>Integration, Robustness &amp; the 6DOF Stretch</h1>
+    <p class="lede">Everything at once — then find out how wrong your parameters can be before the design breaks.</p>
+  </section>
+
+  <article class="day review-day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">10</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Run the full stack end-to-end: noisy sensors → estimator → PID → servo model → plant, all flight software discrete at 100 Hz.</li>
+        <li>Robustness study: vary mass, CG location, moment of inertia, and thrust ±10–20% (a lightweight Monte Carlo — a for-loop over randomized parameters counts). Report the fraction of runs that stay stable and the worst cases.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Extend to <strong>6DOF</strong>: quaternion attitude, two-axis gimbal (pitch + yaw), using the Aerospace Blockset 6DOF (quaternion) block. Reuse everything — that's the payoff of clean architecture.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Read ahead on LQR and quaternion-feedback control as alternatives to PID; one paragraph in the notebook on when you'd bother.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Days 6 through 9 added one real-world effect at a time — controller, actuator limits and discretization, sensor noise, estimation — precisely so each effect's contribution to the closed loop's behavior was isolated and legible. Today is where they all run together for the first time: noisy sensors into the estimator, estimate into the discrete PID, PID output through the limited servo model, into the true plant, at 100 Hz end to end. That's the loop MR-2 is graded on. But a design that works for one nominal set of vehicle parameters isn't yet an engineering result — you don't actually know your CG, moment of inertia, or motor thrust curve to better than 10-20% until you measure the real hardware, so today also asks whether the design survives being <em>wrong</em> about those numbers. A lightweight Monte Carlo — randomize mass, CG, inertia, and thrust within a plausible dispersion and rerun the sim many times — turns "it worked once" into "it works across the range of vehicles I might actually build," and surfaces the worst-case combinations before they surprise you on the bench. Whatever configuration survives this robustness study gets frozen into <code>vehicle_params.m</code> as the exact configuration that ports to hardware in Phase 3 — so it's worth getting right before moving on.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Freeze a "flight configuration": gains, rates, filter constants, all recorded in <code>vehicle_params.m</code>. This exact configuration is what gets ported to the Arduino.</li>
+        <li>Prepare the MR-2 package: architecture diagram, tuning history, robustness results, and a nominal-flight movie/animation if time allows.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><a href="https://github.com/mathworks/Modeling-TVCd-Rocket-in-Simulink">MathWorks TVC rocket example</a> — compare your final architecture against theirs; note the differences deliberately.</li>
+        <li><span class="tag tag-shared">Shared folder</span> Example TVC simulation code (<code>1.References\2. Example Code</code>) — instructor's caveat applies: no guarantee these are correct or best practice. Critique them; finding a flaw is fair game at MR-2.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Integrated sim + robustness study. Presented at MR-2.</div>
+    </div>
+  </article>
+
+  <div class="milestone">
+    <div class="label">Milestone Review · Day 10</div>
+    <h3>MR-2 — Control Readiness Review</h3>
+    <p>Ready when you can check every box:</p>
+    <ul>
+      <li>Closed-loop sim with discrete flight software (ZOH, fixed rate), limited servo, noisy sensors, estimator in the loop.</li>
+      <li>Gain-tuning history with quantified step response and disturbance rejection.</li>
+      <li>Sample-rate sweep showing where and why the loop destabilizes.</li>
+      <li>Estimator performance quantified (RMS error vs. truth) and the accelerometer-under-thrust caveat explained.</li>
+      <li>Robustness study across parameter dispersion, with worst cases identified.</li>
+      <li>Can answer: <em>Why does derivative gain amplify sensor noise, and what's the standard fix? What limits how low the sample rate can go? If the vehicle oscillates at 2 Hz on the bench next week, what are your first three suspects?</em></li>
+    </ul>
+  </div>
+
+  <div class="pagenav">
+    <a href="day09.html">← Day 09</a>
+    <a href="day11.html">Day 11 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 10</span>
+    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

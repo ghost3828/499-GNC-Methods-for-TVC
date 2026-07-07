@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 09 — State Estimation | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html" class="active">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 09 of 15</div>
+    <h1>State Estimation</h1>
+    <p class="lede">Navigation, finally: fuse a drifty-but-smooth gyro with a noisy-but-unbiased accelerometer into an attitude estimate the controller can trust.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">09</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Implement a <strong>complementary filter</strong>: high-pass the gyro-integrated attitude, low-pass the accelerometer gravity-vector attitude, and blend. Understand the single tuning knob (crossover frequency) and its trade.</li>
+        <li>Understand the <strong>Kalman filter</strong> conceptually: predict with a model, correct with measurements, weight by relative uncertainty. Implement the classic 1D angle/bias KF from the TKJ tutorial if time permits.</li>
+        <li>Know the caveat: during powered flight the accelerometer measures thrust, not just gravity — so the correction is only trustworthy pre-launch and in benign conditions. (This is why real rockets align on the pad, then trust the gyro through the burn.)</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Yesterday exposed the trade at the heart of navigation: the gyro is smooth and responsive but drifts without bound, and the accelerometer is noisy and slow but has no long-term bias, since it ultimately references gravity. Neither sensor alone gives you an attitude estimate you can trust for an entire flight — but the two failure modes are complementary, which is exactly the insight behind the <strong>complementary filter</strong>: high-pass the gyro-integrated attitude (trust it for fast changes, before drift accumulates) and low-pass the accelerometer-derived attitude (trust it for the slow, steady-state answer), then blend them with a single crossover-frequency knob. It's a clever, cheap approximation to the more principled <strong>Kalman filter</strong>, which does the same gyro/accelerometer blend but derives its blending weights formally from a model of how uncertain each source is at each instant — predict forward using the dynamics model, correct using the measurement, weighted by relative confidence. Either way, there's a physical caveat you have to internalize before trusting either filter on a rocket: the accelerometer only measures gravity's direction when the vehicle isn't accelerating much on its own, and under motor thrust that assumption is simply false. Real rockets exploit this by aligning their filter on the pad, pre-ignition, then trusting the gyro almost exclusively through the burn — a design decision you'll reason about explicitly in today's notebook entry.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Add an <code>Estimator</code> block inside Flight Software, upstream of the controller. Same sample rate, same discrete style.</li>
+        <li>Plot estimated vs. true attitude through a full simulated flight; report RMS estimation error for three noise levels.</li>
+        <li>Swap the controller's input from truth to estimate. Re-verify the Day 6 test cases — this is the honest closed loop.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">A Practical Approach to Kalman Filter and How to Implement It</a> — TKJ Electronics</li>
+        <li>Understanding Sensor Fusion and Tracking — remaining episodes</li>
+        <li><a href="https://www.youtube.com/c/Eigensteve">Steve Brunton — Control Bootcamp</a> (deeper theory, reference as needed)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Estimator in the loop; estimate-vs-truth plots with RMS error; closed loop verified on estimated state.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day08.html">← Day 08</a>
+    <a href="day10.html">Day 10 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 09</span>
+    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

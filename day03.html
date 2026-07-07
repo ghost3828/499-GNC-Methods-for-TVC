@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 03 — Quaternions | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html" class="active">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase1.html">Phase 01</a> · Day 03 of 15</div>
+    <h1>Quaternions</h1>
+    <p class="lede">The attitude representation your flight computer will actually use: no gimbal lock, four numbers, one constraint.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">03</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Interpret a unit quaternion as an axis-angle rotation, and convert quaternion ↔ DCM ↔ Euler angles.</li>
+        <li>State and implement the <strong>quaternion kinematic differential equation</strong> — how body angular rate ω drives the quaternion, <code>q̇ = ½ q ⊗ [0; ω]</code>.</li>
+        <li>Explain why the quaternion must be renormalized during numerical integration.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Yesterday ended on a problem: Euler angles lock up exactly where a rocket needs them most. The quaternion is the standard fix, and it's what your flight computer will run at 100 Hz starting in Phase 3, so it's worth building real intuition now rather than treating it as four mysterious numbers. A unit quaternion encodes a single rotation as an axis and an angle: rotate by angle θ about unit axis <em>e</em>, and the quaternion is built from cos(θ/2) and sin(θ/2)·<em>e</em>. That representation has no singular orientation — nothing like gimbal lock exists in quaternion space — at the cost of a fourth, redundant number constrained so the quaternion always has unit norm. The <strong>kinematic differential equation</strong> is the rule for propagating attitude forward in time given a measured body rate ω, exactly the role the gyro will play on real hardware: it's a linear ODE in the quaternion, cheap to integrate, but numerical integration drifts the norm away from 1 over time, which is why every implementation renormalizes every step. Today's script — propagate a synthetic 90° pitch-over both ways and watch Euler angles misbehave while the quaternion doesn't — is the experiment that will make Day 13's embedded estimator make sense.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>MATLAB script: integrate the quaternion kinematics for a synthetic gyro-rate history (e.g., a 90° pitch-over maneuver); plot the recovered Euler angles and the quaternion norm drift with and without renormalization.</li>
+        <li>Repeat the same maneuver with Euler-angle kinematics and watch what happens near 90° pitch. Write two paragraphs in your notebook on why the quaternion wins.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — quaternion sections</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 slides — quaternion kinematics</li>
+        <li><a href="https://github.com/peregrine-developments/Orientation">Arduino quaternion/orientation library</a> (untested by instructor — evaluate before trusting; you'll revisit it Day 13)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Quaternion propagation script with plots; notebook entry comparing Euler vs. quaternion propagation.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day02.html">← Day 02</a>
+    <a href="day04.html">Day 04 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 03</span>
+    <span><a href="phase1.html">Phase 01 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

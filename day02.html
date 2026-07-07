@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 02 — Coordinate Frames, Euler Angles &amp; DCMs | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html" class="active">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase1.html">Phase 01</a> · Day 02 of 15</div>
+    <h1>Coordinate Frames, Euler Angles &amp; DCMs</h1>
+    <p class="lede">Attitude is the relationship between two frames. Get rigorous about which frames, and how to write that relationship down.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">02</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Define the <strong>body frame</strong> (fixed to the rocket) and the <strong>navigation/world/inertial frame</strong> (fixed to the launch site), and state which quantities live in which frame (gyro rates: body; gravity: world; thrust: body).</li>
+        <li>Build a rotation matrix (direction cosine matrix, DCM) from a sequence of Euler rotations; verify it is orthonormal (<code>R·Rᵀ = I</code>, det = 1).</li>
+        <li>Demonstrate gimbal lock: find the Euler-angle configuration where a degree of freedom disappears, and explain why that matters for a rocket that may pitch through 90°.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Attitude has no meaning in isolation — it is always the orientation of one frame relative to another, so the first discipline of this course is bookkeeping: know which frame every vector lives in before you write a single equation. The <strong>body frame</strong> rides with the rocket (its x-axis typically along the roll axis); the <strong>inertial/navigation frame</strong> is fixed to the launch site. A gyro reads angular rate in the body frame; gravity naturally points "down" in the inertial frame; you need both to reason about the vehicle. The <strong>direction cosine matrix</strong> is the tool that moves a vector between frames — nine numbers, only three of which are independent, built from a sequence of elementary rotations (Euler angles). Euler angles are intuitive (roll, pitch, yaw) but hide a trap: at certain orientations two of the three rotation axes become parallel and a degree of freedom vanishes — <strong>gimbal lock</strong>. For a rocket that pitches through 90° during a gravity turn, that trap is not a corner case, it's the flight profile. Today you build and test the DCM machinery by hand so that when quaternions show up tomorrow as the fix, you understand exactly what problem they solve.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Worksheet: given a rocket pitched 20° and yawed 10°, express the gravity vector in the body frame by hand, then confirm in MATLAB.</li>
+        <li>Write MATLAB functions <code>euler2dcm</code> and <code>dcm2euler</code>; round-trip random angles and check the error.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="http://www.starlino.com/dcm_tutorial.html">DCM Tutorial — An Introduction to Orientation Kinematics</a> (starlino)</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 attitude slides</li>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — attitude kinematics chapter (course reserve)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Completed frame-rotation worksheet + verified <code>euler2dcm</code>/<code>dcm2euler</code> functions with test script.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day01.html">← Day 01</a>
+    <a href="day03.html">Day 03 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 02</span>
+    <span><a href="phase1.html">Phase 01 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

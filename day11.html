@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 11 — Arduino Foundations &amp; Loop Scheduling | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html" class="active">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase3.html">Phase 03</a> · Day 11 of 15</div>
+    <h1>Arduino Foundations &amp; Loop Scheduling</h1>
+    <p class="lede">Flight software is a loop that must never be late. Learn to write non-blocking code before touching a single sensor.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">11</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Set up the toolchain, blink an LED, and use the serial monitor/plotter as your telemetry window.</li>
+        <li>Internalize the non-blocking pattern: <strong>never</strong> <code>delay()</code> in flight code. Schedule work off <code>millis()</code>/<code>micros()</code>.</li>
+        <li>Build the flight-software skeleton: a main loop that runs the GNC task at exactly 100 Hz, mirrors your Simulink Flight Software subsystem (read → estimate → control → command → log), and measures its own timing.</li>
+        <li>Connect the concept: the fixed loop period on the Arduino <em>is</em> the sample time of your discrete controller — the ZOH from Day 7 made real.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Everything since Day 7 has been designed for this moment: your Simulink flight software is already discrete, already sampled at a fixed rate through zero-order holds, which means porting it to a microcontroller is a translation, not a redesign. But embedded code has one hard rule that Simulink enforces for you automatically and C does not: the loop must never be late. Any function that blocks — most notoriously <code>delay()</code> — steals time from the loop and turns your fixed 100 Hz sample rate into a jittery, effectively-lower rate, silently eroding exactly the stability margin you spent Day 7 characterizing. Today is entirely about the discipline of avoiding that trap: scheduling work against <code>millis()</code>/<code>micros()</code> timestamps instead of blocking calls, so multiple things can happen at different rates without ever waiting. The skeleton you build — read → estimate → control → command → log, running at a measured, held 100 Hz — is a direct, function-for-function mirror of the Flight Software subsystem from Simulink; today it just runs stub logic. Every remaining day of Phase 3 fills in one of those functions for real, so getting the scaffolding solid and provably on-rate now is what keeps Days 12 through 14 from turning into timing debugging sessions.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Work through Blink Without Delay, then extend it: three LEDs at three unrelated rates, no <code>delay()</code>.</li>
+        <li>Write <code>fsw_skeleton.ino</code>: a 100 Hz scheduler with stubbed estimate/control functions, printing loop rate and worst-case overrun. Prove it holds rate while printing telemetry.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.arduino.cc/en/Tutorial/BuiltInExamples/BlinkWithoutDelay">Arduino — Blink Without Delay</a></li>
+        <li><a href="https://www.arduino.cc/">arduino.cc</a> — language reference as needed</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b><code>fsw_skeleton.ino</code> holding 100 Hz with timing telemetry; notebook entry mapping each Simulink block to a function in the skeleton.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day10.html">← Day 10</a>
+    <a href="day12.html">Day 12 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 11</span>
+    <span><a href="phase3.html">Phase 03 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

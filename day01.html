@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 01 — Mission Framing &amp; GNC Architecture | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html" class="active">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase1.html">Phase 01</a> · Day 01 of 15</div>
+    <h1>Mission Framing &amp; GNC Architecture</h1>
+    <p class="lede">What problem are we solving, and what does a GNC system look like?</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">01</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Describe the roles of <strong>Guidance</strong> (where should I go?), <strong>Navigation</strong> (where am I and which way am I pointing?), and <strong>Control</strong> (how do I actuate to follow the plan?).</li>
+        <li>Trace the closed loop: sensors → state estimator → guidance/control laws → actuators → vehicle dynamics → sensors.</li>
+        <li>Explain why a TVC rocket is unstable without active control (thrust behind the CG, no fins doing the work).</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Every vehicle that steers itself — a quadcopter, a re-entry capsule, an orbital booster — runs the same three-function loop, and this course is built around learning that loop by building one. <strong>Navigation</strong> answers "where am I and which way am I pointing right now," built from noisy sensor measurements. <strong>Guidance</strong> answers "where should I be," turning a mission objective into a target state or trajectory. <strong>Control</strong> answers "what do I actuate, right now, to close the gap between the two," and outputs a physical command — in this case, a gimbal angle. A TVC rocket makes the stakes of that loop viscerally clear: with the thrust vector behind the center of gravity and no fins to provide passive aerodynamic restoring torque, the vehicle is an inverted pendulum balanced on a jet of fire. Left alone, any tiny perturbation grows without bound. Everything from Day 2 onward is in service of closing this loop: first the math to describe attitude and motion (Phase 1), then a controller and estimator that close it in simulation (Phase 2), then the same software running for real on a microcontroller (Phase 3).
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Watch the BPS.space Scout F engineering video end-to-end; list every subsystem you see and which GNC function it serves.</li>
+        <li>Draw a block diagram of the full GNC loop for a TVC vehicle. Label signals with units (rad, rad/s, m/s², PWM µs). You will refine this diagram all course.</li>
+        <li>Set up tools: MATLAB/Simulink + Aerospace Blockset, Arduino IDE, Git repo with folders <code>/notebook</code>, <code>/sim</code>, <code>/flight-software</code>, <code>/report</code>.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://youtu.be/4OmOwSB7xP8">BPS.space — Scout F, Engineering Cut</a></li>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=nwgd1CV__rs">BPS.space — Modeling a Thrust Vectored Rocket in Simulink</a> (skim for where we're headed)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>GNC loop block diagram (photo or draw.io export) committed to the repo; tools installed and verified.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="phase1.html">← Phase 1 overview</a>
+    <a href="day02.html">Day 02 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 01</span>
+    <span><a href="phase1.html">Phase 01 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

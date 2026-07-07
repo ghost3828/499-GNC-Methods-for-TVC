@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 04 — Rigid-Body Dynamics &amp; the TVC Torque Model | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html" class="active">Phase 1</a>
+      <a href="phase2.html">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase1.html">Phase 01</a> · Day 04 of 15</div>
+    <h1>Rigid-Body Dynamics &amp; the TVC Torque Model</h1>
+    <p class="lede">Kinematics said how attitude changes given rates; dynamics says how rates change given torques — and the gimbal is where torque comes from.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">04</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Compute/estimate the rocket's <strong>moments of inertia</strong> (component buildup in CAD or hand calc; note the bifilar/pendulum swing test as the experimental method for later).</li>
+        <li>Write <strong>Euler's rotational equations of motion</strong> and explain each term, including why gyroscopic coupling nearly vanishes for a slender, slowly rolling rocket.</li>
+        <li>Derive the TVC moment: gimbal deflection δ tilts the thrust vector T, producing torque ≈ <code>T·sin(δ)·L</code> about the CG, where L is the gimbal-to-CG distance. Identify the small-angle linearization and its limits (typical TVC mounts: ±5–10°).</li>
+        <li>Assemble the planar (pitch-plane) <strong>3DOF equations of motion</strong>: states <code>[x, z, θ, ẋ, ż, θ̇]</code>, inputs thrust magnitude T(t) and gimbal angle δ(t), plus gravity.</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">Primer</span>
+        Days 2–3 gave you the language for describing <em>how attitude changes given a rate</em> — kinematics. Today is dynamics: <em>why does the rate change at all</em>, i.e. what causes torque, and how much of it does a gimbaled motor actually produce. <strong>Euler's rotational equations</strong> relate body angular acceleration to applied torque and the inertia tensor, with a gyroscopic coupling term that — usefully — nearly disappears for a slender rocket that isn't rolling fast. The torque source is purely geometric: tilt the thrust vector by a small gimbal angle δ, and the component of thrust perpendicular to the body axis, acting at a moment arm L from the CG, produces a restoring or destabilizing torque you can write down in one line — <code>T·sin(δ)·L</code>, linearized to <code>T·δ·L</code> for the small angles a real TVC mount allows. Stack that torque equation with Newton's second law for translation and you get the planar 3DOF equations of motion that every simulation in this course is built on: six states, two control inputs (thrust magnitude and gimbal angle), one gravity term. Deriving this by hand — and checking it against limiting cases like pure vertical ascent — is what makes tomorrow's Simulink model something you trust rather than something you copied.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Hand-derive the 3DOF EOM start to finish. Check limiting cases: δ = 0 and perfectly vertical → pure 1D ascent; θ ≠ 0 with δ = 0 → gravity turn + tumble tendency.</li>
+        <li>Estimate mass properties for a plausible vehicle (≈600–900 g, ≈65 cm long, F-class motor) and record them as the parameter file <code>vehicle_params.m</code> your sim will load.</li>
+        <li>Pull a real thrust curve (e.g., Estes F15) from <a href="https://www.thrustcurve.org">thrustcurve.org</a> and save it as a lookup table.</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — rigid body dynamics</li>
+        <li><span class="tag tag-shared">Shared folder</span> AFIT MECH-632 slides — Euler's equations</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Scanned hand derivation of the 3DOF EOM with limiting-case checks; <code>vehicle_params.m</code>; thrust-curve lookup table.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day03.html">← Day 03</a>
+    <a href="day05.html">Day 05 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 04</span>
+    <span><a href="phase1.html">Phase 01 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

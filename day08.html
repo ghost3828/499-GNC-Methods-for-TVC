@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 08 — Sensor Models | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="phase1.html">Phase 1</a>
+      <a href="phase2.html" class="active">Phase 2</a>
+      <a href="phase3.html">Phase 3</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="phase2.html">Phase 02</a> · Day 08 of 15</div>
+    <h1>Sensor Models</h1>
+    <p class="lede">Your controller has been reading truth. Real flight computers never get truth — they get an IMU.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">08</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Describe what each sensor measures: 3-axis gyro → angular velocity (body frame); 3-axis accelerometer → <strong>specific force</strong>, not acceleration (it reads +1 g sitting still and ~0 in free fall — reason through why); barometer → pressure → altitude AGL.</li>
+        <li>Model MEMS gyro errors: white noise, constant bias, (optionally) bias random walk. Show how integrating a biased gyro makes attitude error grow linearly with time — the drift problem Day 9 solves.</li>
+        <li>Model barometer noise/quantization and its slower update rate.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Every result so far has cheated in one specific way: the controller has been reading true attitude straight out of the plant. No real flight computer gets that — it gets three noisy, imperfect sensors, and today's job is modeling exactly how they lie. The gyro measures angular velocity directly and is the workhorse for short-term attitude tracking, but every MEMS gyro carries a constant bias plus white noise, and because attitude comes from <em>integrating</em> rate, a constant bias integrates into an attitude error that grows linearly, without bound, forever — the drift problem that motivates tomorrow's estimator. The accelerometer is the one everyone gets wrong at first: it does not measure acceleration, it measures <strong>specific force</strong> — the non-gravitational force per unit mass — which is why it reads +1 g sitting still on a table (the normal force from the table) and reads ~0 in free fall (no contact force at all). That distinction is why the accelerometer is only a trustworthy attitude reference when the vehicle isn't accelerating much relative to gravity — a caveat that matters enormously once a motor is thrusting. The barometer rounds out the suite with a slower, noisier read on altitude. Parameterizing all three from real datasheets today means the noise your Day 9 filter has to fight is realistic, not a number you made up.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Build the <code>Sensors</code> subsystem: truth in → noisy, biased, sampled measurements out. Parameterize noise levels from the ISM330DHCX and BMP581 datasheets (see <a href="hardware.html">hardware</a>).</li>
+        <li>Feed raw gyro-integrated attitude to your controller and watch performance degrade; quantify the attitude drift rate for your chosen bias.</li>
+        <li>Notebook entry: which sensor errors matter most for a 10–30 second flight, and which can you ignore?</li>
+      </ul>
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=P1OEoA70YJo">A Simple MEMS Gyro Model Using MATLAB/Simulink</a></li>
+        <li><a href="https://www.youtube.com/watch?v=6qV3YjFppuc&list=PLn8PRpmsu08ryYoBpEKzoMOveSTyS-h4a">Understanding Sensor Fusion and Tracking</a> — MATLAB Tech Talks (episodes 1–2)</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Sensor subsystem with datasheet-derived noise parameters; gyro-drift quantification plot.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day07.html">← Day 07</a>
+    <a href="day09.html">Day 09 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 08</span>
+    <span><a href="phase2.html">Phase 02 flight plan</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
