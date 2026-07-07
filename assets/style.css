@@ -51,14 +51,20 @@ body{
   position:sticky; top:0; z-index:50;
 }
 .site-logo{
-  position:absolute; top:50%; transform:translateY(-50%);
   height:48px; width:48px; object-fit:cover; border-radius:10px;
-  z-index:51;
+  display:block;
 }
-.site-logo-left{ left:12px; }
-.site-logo-right{ right:12px; }
+.site-logo-left{ position:absolute; top:50%; left:12px; transform:translateY(-50%); z-index:51; }
+.site-brand-right{
+  position:absolute; top:50%; right:12px; transform:translateY(-50%);
+  display:flex; align-items:center; gap:10px; z-index:51;
+}
+.site-astro-label{
+  font-family:var(--mono); font-weight:700; font-size:1.15rem;
+  letter-spacing:.08em; color:#fff; text-transform:uppercase; white-space:nowrap;
+}
 .topbar-inner{
-  max-width:1060px; margin:0 auto; padding:0 72px;
+  max-width:1060px; margin:0 auto; padding:0 220px 0 72px;
   display:flex; align-items:center; justify-content:space-between;
   flex-wrap:wrap; gap:4px 18px; min-height:56px;
 }
@@ -76,6 +82,10 @@ body{
 .brand .brand-sub{
   font-family:var(--mono); font-weight:700; font-size:.72rem;
   letter-spacing:.18em; color:#9FB1C2; margin-left:2px;
+}
+@media (max-width:640px){
+  .site-astro-label{ display:none; }
+  .topbar-inner{ padding-right:72px; }
 }
 .topbar nav{ display:flex; flex-wrap:wrap; gap:2px; padding:6px 0; }
 .topbar nav a{
