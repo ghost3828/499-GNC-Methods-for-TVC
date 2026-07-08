@@ -77,7 +77,7 @@
       </ul>
 
       <h4>Concept 4 — Why the ideal plant, and what "baseline" means</h4>
-      <p>Today's loop deliberately runs against the <em>ideal</em> plant: continuous time, true attitude fed straight from the plant with no sensor in between. This is a methodological choice, not a shortcut. Over the next few days you'll add, one at a time: actuator saturation and servo lag, discrete-time execution (zero-order hold, fixed rate), and sensor noise plus an estimator. If you introduced all of those together with the controller, a bad response would have four possible causes and you couldn't isolate any of them. By closing the loop on the ideal plant first, <strong>today's tuning table becomes the control — the reference baseline</strong> — and every later degradation is measured as a delta against it. "Overshoot went from 8% to 19% when we added the estimator" is a debuggable statement; "the estimator version oscillates" is not. Keep the baseline plots; they're referenced through MR-2 and the final report.</p>
+      <p>Today's loop deliberately runs against the <em>ideal</em> plant: continuous time, true attitude fed straight from the plant with no sensor in between. This is a methodological choice, not a shortcut. Over the next few days you'll add, one at a time: actuator saturation and servo lag, discrete-time execution (zero-order hold, fixed rate), and sensor noise plus an estimator. If you introduced all of those together with the controller, a bad response would have four possible causes and you couldn't isolate any of them. By closing the loop on the ideal plant first, <strong>today's tuning table becomes the control — the reference baseline</strong> — and every later degradation is measured as a delta against it. "Overshoot went from 8% to 19% when we added the estimator" is a debuggable statement; "the estimator version oscillates" is not. Keep the baseline plots; they're referenced through MR-2 and your final briefing.</p>
 
       <div class="callout">
         <span class="label">Tuning starting point</span>
@@ -88,7 +88,7 @@
       <ul>
         <li>Add a <code>Controller</code> block inside Flight Software (continuous for today). Feed it true attitude from the plant.</li>
         <li>Test cases: (a) start 5° off vertical, command vertical; (b) step attitude command of 5° mid-burn; (c) impulse disturbance torque ("wind gust") — plot θ and δ for each.</li>
-        <li>Tuning study: build a small table of gain sets vs. response metrics. Keep it — it goes in the MR-2 package and the final report.</li>
+        <li>Tuning study: build a small table of gain sets vs. response metrics. Keep it — it goes in the MR-2 package and your final briefing.</li>
         <li>Trigger each failure mode deliberately (high Kp, high Kd, high Ki) and capture one plot of each. Label what you're seeing — these become your recognition library for later debugging.</li>
         <li>Watch the gimbal signal δ, not just θ: check whether your "good" tune is quietly commanding gimbal angles beyond the ±5–10° the real mount allows. If it is, that tune won't survive Day 7's saturation.</li>
       </ul>

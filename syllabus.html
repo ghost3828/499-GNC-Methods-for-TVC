@@ -71,7 +71,7 @@
     <li><strong>Design and tune a PID attitude controller</strong>, characterize its step response and disturbance rejection, and articulate the effect of actuator saturation, rate limits, sample rate, and latency on stability.</li>
     <li><strong>Model sensors and estimate state</strong>: implement IMU/barometer noise models and a complementary (or Kalman) filter that fuses gyro and accelerometer data into an attitude estimate.</li>
     <li><strong>Implement flight software</strong> on a microcontroller: a fixed-rate loop that reads an IMU over I²C, runs the estimator and controller, commands TVC servos over PWM, and logs data.</li>
-    <li><strong>Communicate engineering results</strong> through milestone briefings, a maintained engineering notebook/repository, and a final written report comparing simulated and benchtop behavior.</li>
+    <li><strong>Communicate engineering results</strong> through milestone briefings that compare simulated and benchtop behavior, and a maintained engineering notebook/repository.</li>
   </ol>
 
   <h2>Course Structure</h2>
@@ -99,7 +99,7 @@
       <tr><td class="mono"><a href="day12exp.html">12</a></td><td><span class="tag tag-p3">P3</span> <a href="day12exp.html">Sensor bring-up: IMU + barometer over I²C; data logging</a></td><td>Live sensor telemetry + logs</td></tr>
       <tr><td class="mono"><a href="day13exp.html">13</a></td><td><span class="tag tag-p3">P3</span> <a href="day13exp.html">Real-time attitude estimation on hardware</a></td><td>Estimator tracking physical tilts</td></tr>
       <tr><td class="mono"><a href="day14exp.html">14</a></td><td><span class="tag tag-p3">P3</span> <a href="day14exp.html">Servo control; controller port; benchtop closed loop</a></td><td>Bench demo rehearsal; sim comparison</td></tr>
-      <tr><td class="mono"><a href="day15exp.html">15</a></td><td><span class="tag tag-p3">P3</span> <a href="day15exp.html">Final demo, briefing, report</a></td><td><strong>MR-3: Flight Software Demo</strong> + report</td></tr>
+      <tr><td class="mono"><a href="day15exp.html">15</a></td><td><span class="tag tag-p3">P3</span> <a href="day15exp.html">Final demo and briefing</a></td><td><strong>MR-3: Flight Software Demo</strong></td></tr>
     </tbody>
   </table>
 
@@ -124,8 +124,8 @@
         <td>Working benchtop loop (sensors → estimate → command → servo); quality of the sim-vs-hardware comparison.</td>
       </tr>
       <tr>
-        <td>Final report</td><td class="mono">25%</td>
-        <td>10–15 page technical report: architecture, models, results, lessons learned, path to flight.</td>
+        <td>Final briefing</td><td class="mono">25%</td>
+        <td>20-minute briefing: architecture, models, results, lessons learned, path to flight.</td>
       </tr>
     </tbody>
   </table>
