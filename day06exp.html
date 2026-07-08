@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 06 — PID Control — First Closed Loop | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 06 of 15</div>
+    <h1>PID Control — First Closed Loop</h1>
+    <p class="lede">Close the loop on the ideal plant with perfect state knowledge. Learn what each gain buys you and what it costs.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">06</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Explain the P, I, and D terms physically for attitude control: P = spring stiffness on angle error, D = damping on angle rate, I = trim against steady disturbances (e.g., motor misalignment, CG offset).</li>
+        <li>Tune a PD (then PID) controller mapping pitch error → gimbal command, and characterize it: rise time, overshoot, settling time, disturbance rejection.</li>
+        <li>Show the classic failure modes on purpose: too much P (oscillation), too much D (noise amplification — foreshadowing Day 8), too much I (windup and slow oscillation).</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Phase 1 built a vehicle that falls over on its own; Phase 2 starts making it stand up. Today's controller runs against the <em>ideal</em> plant — continuous time, perfect knowledge of true attitude — precisely so that any bad behavior you see is the controller's, not confused with sensor noise or discretization effects that arrive later this week. PID is the workhorse of the whole field because each term has a physical read: proportional gain acts like a torsional spring pulling attitude error back to zero, derivative gain acts like a damper resisting angular rate (killing oscillation before it starts), and integral gain slowly trims out steady disturbances a spring and damper alone can't — a CG offset or slight motor misalignment that would otherwise leave a permanent pointing error. Push each gain too far and you get a named failure mode worth seeing on purpose now: too much P oscillates, too much D amplifies noise (a preview of Day 8, once real sensors show up), too much I causes windup and a slow secondary oscillation. The gain-tuning table you build today, with rise time, overshoot, and settling time for each test case, isn't just homework — it's the baseline every later change (actuator limits, discrete time, sensor noise, the estimator) gets compared against.
+      </div>
+
+      <h4>Concept 1 — The three terms as physical hardware</h4>
+      <p>The reason PID survives everywhere is that on an attitude loop each term maps to a mechanical part you can picture. Error is <code>e = θ_command − θ_measured</code>; the controller output is a gimbal angle <code>δ = Kp·e + Ki·∫e dt + Kd·ė</code>.</p>
+      <ul>
+        <li><strong>Proportional (Kp) — the torsional spring.</strong> Commands gimbal in proportion to how far off you are. A stiffer spring (higher Kp) pulls back harder and faster, but like any spring it overshoots and, with the vehicle's inertia, <em>rings</em> — oscillates — if there's nothing to damp it. On an unstable plant you need a minimum Kp just to overcome the instability at all; below that threshold the rocket still falls over.</li>
+        <li><strong>Derivative (Kd) — the damper.</strong> Responds to the <em>rate</em> of error, <code>ė</code>, opposing motion. It's the shock absorber that stops the proportional spring from ringing: it anticipates, pulling back as you approach the target so you settle instead of overshooting. Its dark side is that differentiating amplifies high-frequency content — with a perfect sensor today that's free, but the moment real gyro noise arrives on Day 8, a big Kd turns that noise into a jittering gimbal. Note the foreshadowing now.</li>
+        <li><strong>Integral (Ki) — the trim tab.</strong> Accumulates error over time, so any <em>persistent</em> offset eventually builds enough command to cancel it. This is what defeats steady disturbances a spring/damper can't: a CG that's slightly off-axis, a motor mounted a hair crooked. Without I, those leave a permanent steady-state pointing error; with I, it's slowly driven to zero. The cost is lag and <em>windup</em> (Concept 3).</li>
+      </ul>
+      <p>Practical sequence: tune <strong>PD first</strong> (stiffness + damping to get a stable, well-damped response), then add just enough <strong>I</strong> to erase any residual steady offset. Adding all three at once makes it impossible to tell which term caused which behavior.</p>
+
+      <h4>Concept 2 — Reading a step response: the four numbers</h4>
+      <p>The tuning table isn't busywork — it's how you turn "looks good" into comparable numbers. For a step or initial-offset test, characterize the θ response with four metrics:</p>
+      <ul>
+        <li><strong>Rise time</strong> — how fast it first reaches the target. Mostly set by Kp (and the instability you're fighting). Faster is better, up to the point it costs overshoot.</li>
+        <li><strong>Overshoot</strong> — how far past the target it swings. Driven up by Kp, driven down by Kd. On a rocket, big overshoot means the nose swings past vertical and the gimbal has to catch it — wasted authority.</li>
+        <li><strong>Settling time</strong> — how long until it stays within a small band of the target. The honest summary of "how quickly is this actually done reacting."</li>
+        <li><strong>Steady-state error</strong> — what's left after it settles. Should be ~zero with I present; nonzero without it under a constant disturbance.</li>
+      </ul>
+      <p>There is no single "best" — these <strong>trade against each other</strong>, and the right balance depends on the mission. A landing burn wants low overshoot (don't swing the nose around near the ground) even at some cost in rise time. Naming the trade-offs explicitly is what makes your gain choices defensible at MR-2 instead of "these felt good."</p>
+
+      <h4>Concept 3 — The three failure modes, and why to trigger them on purpose</h4>
+      <p>An objective explicitly asks you to break the controller three ways. Seeing each failure deliberately, on the clean plant, means you'll <em>recognize</em> it instantly when it shows up accidentally later:</p>
+      <ul>
+        <li><strong>Too much P → sustained oscillation.</strong> Stiff spring, not enough damping: the vehicle overshoots, over-corrects, and rings at a roughly fixed frequency. If Kp is high enough it goes unstable outright. This is the most common "why is it shaking" cause.</li>
+        <li><strong>Too much D → noise amplification.</strong> On today's perfect plant you may have to inject a little noise to see it, but a large Kd differentiates any measurement jitter into a violently active gimbal. This is the single most important thing to remember when Day 8's real sensors arrive — it's why derivative terms get filtered in practice.</li>
+        <li><strong>Too much I → windup.</strong> If error persists (e.g., the gimbal saturates and can't correct fast enough), the integrator keeps accumulating a larger and larger command. When the error finally reverses, that huge stored command takes time to unwind, causing a big overshoot and a slow secondary oscillation. The fix (anti-windup / integrator clamping) comes when you add actuator saturation — note the need now.</li>
+      </ul>
+
+      <h4>Concept 4 — Why the ideal plant, and what "baseline" means</h4>
+      <p>Today's loop deliberately runs against the <em>ideal</em> plant: continuous time, true attitude fed straight from the plant with no sensor in between. This is a methodological choice, not a shortcut. Over the next few days you'll add, one at a time: actuator saturation and servo lag, discrete-time execution (zero-order hold, fixed rate), and sensor noise plus an estimator. If you introduced all of those together with the controller, a bad response would have four possible causes and you couldn't isolate any of them. By closing the loop on the ideal plant first, <strong>today's tuning table becomes the control — the reference baseline</strong> — and every later degradation is measured as a delta against it. "Overshoot went from 8% to 19% when we added the estimator" is a debuggable statement; "the estimator version oscillates" is not. Keep the baseline plots; they're referenced through MR-2 and the final report.</p>
+
+      <div class="callout">
+        <span class="label">Tuning starting point</span>
+        If you're staring at a blank gain set, don't random-walk. Two disciplined ways in: (1) <strong>Structured trial</strong> — set Ki = Kd = 0, raise Kp until the response oscillates steadily, then back off and add Kd to damp it, then a little Ki for steady-state. (2) <strong>Model-based</strong> — since you have the linearized plant from Day 4, use MATLAB's <code>pidtune</code> or the Simulink PID Tuner to get an analytic starting point, then hand-adjust. The classic Ziegler–Nichols rules give a first cut too, but they're tuned for stable process plants and tend to be too aggressive for an unstable attitude loop — treat them as a rough starting estimate, not a final answer.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Add a <code>Controller</code> block inside Flight Software (continuous for today). Feed it true attitude from the plant.</li>
+        <li>Test cases: (a) start 5° off vertical, command vertical; (b) step attitude command of 5° mid-burn; (c) impulse disturbance torque ("wind gust") — plot θ and δ for each.</li>
+        <li>Tuning study: build a small table of gain sets vs. response metrics. Keep it — it goes in the MR-2 package and the final report.</li>
+        <li>Trigger each failure mode deliberately (high Kp, high Kd, high Ki) and capture one plot of each. Label what you're seeing — these become your recognition library for later debugging.</li>
+        <li>Watch the gimbal signal δ, not just θ: check whether your "good" tune is quietly commanding gimbal angles beyond the ±5–10° the real mount allows. If it is, that tune won't survive Day 7's saturation.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Tuning P, I, and D all at once.</strong> You lose the ability to attribute behavior to a term. PD first, then add I.</li>
+          <li><strong>Ignoring the gimbal command.</strong> A tune that looks great in θ may be slamming the gimbal past its physical limit. Always plot δ alongside θ.</li>
+          <li><strong>Sign of the feedback.</strong> Get the error sign backwards and the controller drives the vehicle over <em>faster</em> — positive feedback on an already-unstable plant. If small gains make it worse, check your sign first.</li>
+          <li><strong>Forgetting this is the easy version.</strong> Perfect state, continuous time. Don't over-tune to squeeze out the last 1% of overshoot here; that margin will vanish under noise and discretization anyway. Tune for robustness, not perfection on the ideal plant.</li>
+          <li><strong>Derivative on error vs on measurement.</strong> Taking the derivative of the error causes a "derivative kick" spike whenever the command steps. Differentiating the <em>measurement</em> instead avoids it — a small structural choice worth making now.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=wkfEZmsQqiA&list=PLn8PRpmsu08pQBgjxYFXSsODEF3Jqmm-y">Understanding PID Control</a> — Brian Douglas, MATLAB Tech Talks (episodes 1–4 today).</li>
+        <li><a href="https://www.youtube.com/user/ControlLectures">Brian Douglas — Control System Lectures</a> (reference as needed).</li>
+        <li><a href="https://www.youtube.com/watch?v=jrrC53Lru9I">TVC Rocket PID Tuning in Simulink</a> (compare their tuning process to yours).</li>
+        <li><a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Brett Beauregard's series on the practical issues (derivative kick, windup, sample time) that separate a textbook PID from a working one; you'll reimplement much of this on the microcontroller in Phase 3.</li>
+        <li><a href="https://www.mathworks.com/help/control/ref/pidtune.html">MATLAB <code>pidtune</code></a> / <a href="https://www.mathworks.com/help/slcontrol/ug/introduction-to-automatic-pid-tuning.html">Simulink PID Tuner</a> — the model-based starting-point tools referenced in the tuning callout.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method">Ziegler–Nichols method</a> (Wikipedia) — the classic heuristic starting rules and their limitations on unstable plants.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Closed-loop model on the ideal plant; gain-tuning table with response plots for the three test cases, plus one labeled plot of each deliberately-triggered failure mode.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day05.html">← Day 05</a>
+    <a href="day07.html">Day 07 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 06</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

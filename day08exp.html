@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 08 — Sensor Models | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 08 of 15</div>
+    <h1>Sensor Models</h1>
+    <p class="lede">Your controller has been reading truth. Real flight computers never get truth — they get an IMU.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">08</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Describe what each sensor measures: 3-axis gyro → angular velocity (body frame); 3-axis accelerometer → <strong>specific force</strong>, not acceleration (it reads +1 g sitting still and ~0 in free fall — reason through why); barometer → pressure → altitude AGL.</li>
+        <li>Model MEMS gyro errors: white noise, constant bias, (optionally) bias random walk. Show how integrating a biased gyro makes attitude error grow linearly with time — the drift problem Day 9 solves.</li>
+        <li>Model barometer noise/quantization and its slower update rate.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Every result so far has cheated in one specific way: the controller has been reading true attitude straight out of the plant. No real flight computer gets that — it gets three noisy, imperfect sensors, and today's job is modeling exactly how they lie. The gyro measures angular velocity directly and is the workhorse for short-term attitude tracking, but every MEMS gyro carries a constant bias plus white noise, and because attitude comes from <em>integrating</em> rate, a constant bias integrates into an attitude error that grows linearly, without bound, forever — the drift problem that motivates tomorrow's estimator. The accelerometer is the one everyone gets wrong at first: it does not measure acceleration, it measures <strong>specific force</strong> — the non-gravitational force per unit mass — which is why it reads +1 g sitting still on a table (the normal force from the table) and reads ~0 in free fall (no contact force at all). That distinction is why the accelerometer is only a trustworthy attitude reference when the vehicle isn't accelerating much relative to gravity — a caveat that matters enormously once a motor is thrusting. The barometer rounds out the suite with a slower, noisier read on altitude. Parameterizing all three from real datasheets today means the noise your Day 9 filter has to fight is realistic, not a number you made up.
+      </div>
+
+      <h4>Concept 1 — The gyro: great short-term, hopeless long-term</h4>
+      <p>The MEMS gyro measures angular rate <code>ω</code> directly in the body frame — exactly the quantity that drives the quaternion kinematic equation from Day 3, which is why it's the backbone of attitude tracking. Its real output is truth plus a stack of errors:</p>
+      <ul>
+        <li><strong>White noise (angular random walk).</strong> Zero-mean, high-frequency hash on every sample. On its own it averages out, but once you <em>integrate</em> rate into angle it accumulates into a random walk — the angle wanders even with no true motion.</li>
+        <li><strong>Constant bias.</strong> A fixed offset: the gyro reads, say, 0.5°/s when the vehicle is perfectly still. This is the killer. Integrate a constant bias and you get an attitude error that grows <em>linearly and without bound</em> — 0.5°/s of bias is 15° of error after 30 seconds, from a vehicle that never moved. This single effect is the entire reason Day 9's estimator exists.</li>
+        <li><strong>Bias instability / random walk (optional).</strong> The bias itself drifts slowly over time and temperature, so you can't just measure it once and subtract it forever. Model this only if you want realism; for a 30-second flight the constant-bias term dominates.</li>
+      </ul>
+      <p>The takeaway to carry into tomorrow: the gyro is <strong>excellent over short intervals and untrustworthy over long ones</strong>. That frequency split — trust it fast, distrust it slow — is precisely the complementary structure a filter exploits.</p>
+
+      <h4>Concept 2 — The accelerometer measures specific force, and why that trips everyone</h4>
+      <p>This is the single most misunderstood sensor in inertial navigation, so reason it through rather than memorizing. An accelerometer is, physically, a proof mass on a spring. It measures the <em>net non-gravitational force</em> per unit mass acting on that mass — called <strong>specific force</strong>, not acceleration. Two cases make it click:</p>
+      <ul>
+        <li><strong>Sitting still on a table.</strong> The vehicle's acceleration is zero, yet the accelerometer reads <strong>+1 g upward</strong>. Why? Gravity pulls the proof mass down, the spring (normal force) pushes it up to hold it still, and the sensor reports that contact force. It's measuring the force resisting gravity, not gravity itself.</li>
+        <li><strong>In free fall.</strong> The vehicle accelerates downward at g, yet the accelerometer reads <strong>~0</strong>. Why? Nothing is pushing on the proof mass — it and the case fall together, the spring is unstrained. No specific force, no reading.</li>
+      </ul>
+      <p>The consequence for attitude: when the vehicle is <em>not</em> accelerating much, the only specific force is the 1 g reaction to gravity, so the accelerometer points "up" and gives you an absolute tilt reference — a way to correct the gyro's drift about the horizontal axes. But the instant the motor lights, thrust adds a large specific force that swamps the gravity signal, and the accelerometer no longer knows which way is down. <strong>Under powered flight the accelerometer is a poor attitude reference</strong>; it's most trustworthy on the pad and at coast/apogee. Your estimator will have to weight it accordingly — this caveat is why the filter can't just believe the accelerometer blindly.</p>
+
+      <h4>Concept 3 — The complementary picture: no single sensor is enough</h4>
+      <p>Step back and the suite has a clean logic. The <strong>gyro</strong> is fast and smooth but drifts (good high-frequency, bad low-frequency). The <strong>accelerometer</strong> gives an absolute, drift-free tilt reference but is noisy and corrupted by any real acceleration (good low-frequency, bad high-frequency). They fail in <em>opposite</em> frequency bands — which is exactly why fusing them works: trust the gyro for fast changes, trust the accelerometer to slowly pull out the gyro's drift. The <strong>barometer</strong> adds an independent altitude channel (pressure → height AGL) on a different axis of the problem entirely. This complementary structure isn't a coincidence you'll discover tomorrow; it's the reason the sensor suite was chosen this way, and seeing it now makes the Day 9 filter feel inevitable rather than magical.</p>
+
+      <h4>Concept 4 — The barometer, sample rates, and quantization</h4>
+      <p>The barometer infers altitude from static pressure via the barometric formula. Its character is different from the IMU and worth modeling faithfully:</p>
+      <ul>
+        <li><strong>Slower update rate.</strong> Where the gyro runs at hundreds of Hz, a barometer might update at tens of Hz. In a multi-rate model, measurements arrive on their own slower clock — your estimator must handle updates that don't all come at once.</li>
+        <li><strong>Noise and quantization.</strong> Pressure readings are noisy, and the sensor reports in discrete steps (a resolution floor). Near the ground, prop wash and the vehicle's own aerodynamics also perturb local pressure — a real effect for a landing rocket.</li>
+        <li><strong>Absolute but coarse.</strong> Unlike the drifting gyro, the barometer doesn't drift without bound, but it's too coarse and slow to be your only altitude source. It's the low-frequency anchor for a fused vertical estimate.</li>
+      </ul>
+      <p>Model it as: true altitude → barometric noise + quantization → held at the slower sample rate. Parameterize from the actual BMP390 datasheet so the numbers your Day 9 filter fights are real.</p>
+
+      <div class="callout">
+        <span class="label">Reading a datasheet for these numbers</span>
+        The noise parameters aren't invented — they're on the datasheet, though under names that take translation. For the gyro, look for <em>rate noise density</em> (often in <code>°/s/√Hz</code> or <code>mdps/√Hz</code>) for the white-noise term, and a <em>zero-rate offset</em> or <em>bias</em> spec for the constant bias. For the barometer, look for <em>RMS noise</em> (in Pa or equivalent meters) and <em>resolution</em>. Convert a noise density to a per-sample standard deviation using your sample rate (<code>σ ≈ density × √(bandwidth)</code>). Getting these from the BNO085 and BMP390 datasheets — not from a tutorial's round numbers — is what makes today's model predictive of the real hardware you'll fly in Phase 3.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Build the <code>Sensors</code> subsystem: truth in → noisy, biased, sampled measurements out. Parameterize noise levels from the BNO085 and BMP390 datasheets (see <a href="hardware.html">hardware</a>).</li>
+        <li>Feed raw gyro-integrated attitude to your controller and watch performance degrade; quantify the attitude drift rate for your chosen bias (in °/s of drift — compare to the bias you set and confirm the linear-growth prediction).</li>
+        <li>Re-run the Day 6 test cases with the noisy sensor in the loop. Note where your Day 7 derivative term now amplifies noise into gimbal jitter — this is the noise amplification you were warned about, arriving on schedule.</li>
+        <li>Notebook entry: which sensor errors matter most for a 10–30 second flight, and which can you ignore?</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Treating the accelerometer as an accelerometer.</strong> It reads specific force. Feeding its raw output into a controller as if it were vehicle acceleration — especially under thrust — gives nonsense. Remember +1 g at rest.</li>
+          <li><strong>Modeling only white noise, skipping bias.</strong> White noise is the visible one, but constant bias is what actually kills your attitude estimate through integration. Bias is the whole point of today.</li>
+          <li><strong>Same sample rate for every sensor.</strong> The barometer is slower than the IMU. A single-rate model hides the multi-rate problem the estimator must solve.</li>
+          <li><strong>Datasheet units.</strong> Noise density (per √Hz) is not a per-sample standard deviation. Convert using bandwidth/sample rate, or your noise will be off by a large factor.</li>
+          <li><strong>Forgetting the Day 7 derivative interaction.</strong> The noise you add today is exactly what a large Kd amplifies. If the gimbal starts chattering, that's the predicted coupling — the fix is derivative filtering, not just lowering the noise.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.youtube.com/watch?v=P1OEoA70YJo">A Simple MEMS Gyro Model Using MATLAB/Simulink</a> — builds the exact noise+bias gyro model you need today.</li>
+        <li><a href="https://www.youtube.com/watch?v=6qV3YjFppuc&list=PLn8PRpmsu08ryYoBpEKzoMOveSTyS-h4a">Understanding Sensor Fusion and Tracking</a> — MATLAB Tech Talks (episodes 1–2; episode 1 covers what each sensor measures, including the specific-force point).</li>
+        <li><a href="https://www.analog.com/en/resources/technical-articles/what-you-need-to-know-about-mems-gyroscopes.html">MEMS gyroscope error sources</a> (Analog Devices) — bias, angular random walk, and bias instability explained by a sensor manufacturer.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Proper_acceleration">Proper acceleration / specific force</a> (Wikipedia) — the rigorous statement of why an accelerometer reads +1 g at rest and 0 in free fall.</li>
+        <li><a href="https://www.ceva-ip.com/wp-content/uploads/2019/10/BNO080_085-Datasheet.pdf">BNO085 datasheet</a> — the IMU for this project; source of your gyro/accelerometer noise parameters (also linked from <a href="hardware.html">hardware</a>).</li>
+        <li><a href="https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp390/">BMP390 datasheet</a> (Bosch) — the barometer; source of your pressure noise and resolution figures.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Barometric_formula">Barometric formula</a> (Wikipedia) — the pressure-to-altitude relationship your barometer model inverts.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Sensor subsystem with datasheet-derived noise parameters; gyro-drift quantification plot (confirming linear growth from bias); re-run of the closed loop showing noise-induced degradation.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day07.html">← Day 07</a>
+    <a href="day09.html">Day 09 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 08</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

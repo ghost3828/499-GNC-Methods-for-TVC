@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — Integration, Robustness &amp; the 6DOF Stretch | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 10 of 15 · Milestone</div>
+    <h1>Integration, Robustness &amp; the 6DOF Stretch</h1>
+    <p class="lede">Everything at once — then find out how wrong your parameters can be before the design breaks.</p>
+  </section>
+
+  <article class="day review-day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">10</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Run the full stack end-to-end: noisy sensors → estimator → PID → servo model → plant, all flight software discrete at 100 Hz.</li>
+        <li>Robustness study: vary mass, CG location, moment of inertia, and thrust ±10–20% (a lightweight Monte Carlo — a for-loop over randomized parameters counts). Report the fraction of runs that stay stable and the worst cases.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Extend to <strong>6DOF</strong>: quaternion attitude, two-axis gimbal (pitch + yaw), using the Aerospace Blockset 6DOF (quaternion) block. Reuse everything — that's the payoff of clean architecture.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Read ahead on LQR and quaternion-feedback control as alternatives to PID; one paragraph in the notebook on when you'd bother.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Days 6 through 9 added one real-world effect at a time — controller, actuator limits and discretization, sensor noise, estimation — precisely so each effect's contribution to the closed loop's behavior was isolated and legible. Today is where they all run together for the first time: noisy sensors into the estimator, estimate into the discrete PID, PID output through the limited servo model, into the true plant, at 100 Hz end to end. That's the loop MR-2 is graded on. But a design that works for one nominal set of vehicle parameters isn't yet an engineering result — you don't actually know your CG, moment of inertia, or motor thrust curve to better than 10-20% until you measure the real hardware, so today also asks whether the design survives being <em>wrong</em> about those numbers. A lightweight Monte Carlo — randomize mass, CG, inertia, and thrust within a plausible dispersion and rerun the sim many times — turns "it worked once" into "it works across the range of vehicles I might actually build," and surfaces the worst-case combinations before they surprise you on the bench. Whatever configuration survives this robustness study gets frozen into <code>vehicle_params.m</code> as the exact configuration that ports to hardware in Phase 3 — so it's worth getting right before moving on.
+      </div>
+
+      <h4>Concept 1 — Integration surfaces the interactions, not just the sum</h4>
+      <p>Running everything together is not merely stacking four working blocks — it exposes the <em>couplings</em> that isolated testing hid by construction. Each pair you've kept apart until now can interact badly:</p>
+      <ul>
+        <li><strong>Estimator lag × controller phase.</strong> The gyro-propagation estimator is cheap but not instantaneous — it adds a small delay and, near burnout, some accumulated drift. That's more phase lag in a loop whose margin you already spent on the ZOH and servo delay. The controller that was crisp on truth may be soggy on the estimate.</li>
+        <li><strong>Sensor noise × derivative gain.</strong> The noise from Day 8 flows through the estimator into the controller, where any derivative action amplifies it into gimbal chatter — the coupling foreshadowed since Day 6. If the gimbal buzzes, this is usually why.</li>
+        <li><strong>Saturation × estimator drift.</strong> A worst-case parameter draw (high thrust, aft CG) can demand more gimbal than the ±5° mount delivers; during saturation the loop is open and any estimator error compounds. The two effects that were survivable alone can combine into a divergence.</li>
+        <li><strong>Discretization × everything.</strong> Every one of the above happens on the sampled clock, so lags don't simply add — they stack in phase and can push a loop that looked fine in each isolated test past its margin.</li>
+      </ul>
+      <p>This is why integration is its own milestone and not a formality. The single most useful habit today: when the integrated loop misbehaves, you already have four isolated baselines (Days 6–9) to bisect against — turn the estimator back to truth, or the sensors back to ideal, and see which restoration fixes it. That tells you which <em>interaction</em>, not which block, is the culprit.</p>
+
+      <h4>Concept 2 — Monte Carlo robustness: why "it worked once" isn't an answer</h4>
+      <p>The nominal <code>vehicle_params.m</code> is a guess. You will not know the real vehicle's mass, CG, transverse inertia, or thrust curve to better than 10–20% until the hardware exists and you measure it — and the CG and inertia even shift during the burn as propellant depletes. A controller tuned to razor margins on the nominal parameters can fail on the actual vehicle not because the design is wrong but because the vehicle isn't the nominal one. The robustness study answers the real question: <em>across the range of vehicles I might actually build and fly, what fraction does this design keep stable?</em></p>
+      <p>The method is deliberately lightweight — no formal framework required:</p>
+      <ul>
+        <li><strong>Define dispersions.</strong> Put a plausible spread on each uncertain parameter (e.g. mass ±10%, CG ±1–2 cm, transverse inertia ±20%, peak thrust ±15%). Use the datasheet tolerances and your own build-repeatability estimate, not round numbers pulled from nowhere.</li>
+        <li><strong>Sample and run.</strong> A for-loop that draws each parameter randomly within its dispersion and reruns the sim is a legitimate Monte Carlo. A few hundred runs is plenty to see the shape.</li>
+        <li><strong>Score each run.</strong> Define "stable" concretely before you look — e.g. peak attitude error stays under some bound and the vehicle doesn't tumble — so scoring isn't a judgment call after the fact.</li>
+        <li><strong>Report the distribution and the tails.</strong> The fraction of stable runs is the headline; the <em>worst</em> cases are the engineering value. Which parameter combination broke it? Aft-CG-plus-high-thrust is a classic culprit because it maximizes both instability and gimbal demand at once.</li>
+      </ul>
+      <p>The output isn't just a pass rate — it's a map of where your margin is thin, which tells you what to measure most carefully on the real hardware and where to leave design margin.</p>
+
+      <h4>Concept 3 — Freezing the flight configuration</h4>
+      <p>The configuration that survives the robustness study gets frozen into <code>vehicle_params.m</code> as the single source of truth, and this act matters more than it looks. From here to Phase 3, <strong>this exact set of numbers — gains, sample rate, filter/bias constants, saturation limits — is what ports to the Arduino.</strong> The whole point of the clean four-subsystem architecture (Day 5) and the discrete, ZOH-sampled flight software (Day 7) was to make that port a translation rather than a redesign; freezing the config is what makes the eventual hardware-vs-sim comparison honest, because both are running provably the same parameters. Discipline here: version the file, date it, and record <em>why</em> each value is what it is (which robustness run justified it), so that when the bench behaves differently on Day 12 you can tell a code difference from a parameter difference from a real-world effect the model missed.</p>
+
+      <h4>Concept 4 — The 6DOF stretch, and why it's mostly reuse</h4>
+      <p><span class="tag tag-stretch">Stretch</span> The planar 3DOF model has carried the course because pitch, yaw, and roll decouple for a slender, slowly-rolling vehicle (Day 4) — so a single-axis design captures the essential problem. Going to 6DOF removes that simplification and is the honest full picture:</p>
+      <ul>
+        <li><strong>Quaternion attitude throughout.</strong> Full 3D orientation, no gimbal lock — exactly why Day 3 built quaternions and Day 9 propagates them. The 6DOF plant, the estimator, and the controller all now speak quaternion.</li>
+        <li><strong>Two-axis gimbal.</strong> The TVC mount deflects in pitch <em>and</em> yaw, so the controller commands two gimbal angles. With roll actively nulled, the pitch and yaw channels are near-copies of the single-axis design you already tuned — you're largely instantiating the same controller twice.</li>
+        <li><strong>Roll handling.</strong> 6DOF surfaces roll as its own (weakly controllable) axis; for this vehicle the job is usually just to null roll rate so the pitch/yaw decoupling assumption stays valid, closing the loop from Day 4.</li>
+        <li><strong>The Aerospace Blockset 6DOF (quaternion) block</strong> provides the rigid-body integration; know its conventions as you did the 3DOF block on Day 5.</li>
+      </ul>
+      <p>The reason this is a stretch and not a rebuild is the architecture: clean subsystem boundaries mean you swap the plant block and duplicate a controller channel rather than starting over. If the 6DOF extension turns into a rewrite, that's a signal the earlier architecture wasn't as clean as it looked — useful feedback either way.</p>
+
+      <div class="callout">
+        <span class="label">PID vs LQR / quaternion feedback — when to bother</span>
+        <span class="tag tag-stretch">Stretch</span> The second stretch asks you to reason about alternatives to PID. The honest framing: PID, tuned per-axis, is entirely sufficient for a decoupled slender rocket, which is why this course uses it. <strong>LQR</strong> earns its keep when axes couple and you want a single controller that trades off all states optimally — it designs all the gains at once from a cost function instead of hand-tuning each, valuable the moment 6DOF cross-coupling becomes real. <strong>Quaternion feedback control</strong> operates directly on the attitude-error quaternion, avoiding any Euler-angle intermediary and handling large-angle slews cleanly — the natural choice if the mission includes big reorientations rather than small corrections about vertical. For a hover-and-land TVC hop about vertical, neither is necessary; the one-paragraph notebook entry is simply naming the mission change (strong coupling → LQR; large-angle maneuvers → quaternion feedback) that would make you switch.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Run the full stack end-to-end at 100 Hz and confirm it holds the Day 6 test cases with the real estimator and noisy sensors in the loop — the honest closed loop.</li>
+        <li>Bisect any integrated-loop misbehavior against the Day 6–9 baselines (estimator→truth, sensors→ideal) to identify which interaction, not which block, is responsible.</li>
+        <li>Run the Monte Carlo: define dispersions from datasheet/build tolerances, sample a few hundred runs, score each against a pre-defined stability criterion, and report pass rate plus worst-case parameter combinations.</li>
+        <li>Freeze a "flight configuration": gains, rates, filter/bias constants, saturation limits — all recorded in a versioned, dated <code>vehicle_params.m</code>. This exact configuration is what gets ported to the Arduino.</li>
+        <li>Prepare the MR-2 package: architecture diagram, tuning history, robustness results, and a nominal-flight movie/animation if time allows.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Extend to 6DOF (quaternion plant, two-axis gimbal); duplicate the single-axis controller for pitch and yaw, add roll-rate nulling.</li>
+        <li><span class="tag tag-stretch">Stretch</span> Notebook paragraph: when LQR or quaternion feedback would beat PID for a future version of this vehicle.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Declaring victory on the nominal run.</strong> One stable flight on nominal parameters is not robustness. The Monte Carlo is the deliverable, not a bonus.</li>
+          <li><strong>Dispersions pulled from thin air.</strong> Base the spreads on datasheet tolerances and your build repeatability, or the pass rate is meaningless.</li>
+          <li><strong>Undefined "stable."</strong> Decide the pass/fail criterion before running, or you'll rationalize marginal runs after seeing them.</li>
+          <li><strong>Re-tuning per Monte Carlo draw.</strong> The flight config is fixed; the study measures how one frozen design copes with parameter variation. Tuning to each draw defeats the purpose.</li>
+          <li><strong>Freezing an unversioned config.</strong> If you can't later tell which numbers flew, a bench discrepancy in Phase 3 becomes unsolvable. Version and date <code>vehicle_params.m</code>.</li>
+          <li><strong>Treating 6DOF as required.</strong> It's a stretch — a solid, well-characterized 3DOF result beats a rushed, poorly-understood 6DOF one at MR-2.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><a href="https://github.com/mathworks/Modeling-TVCd-Rocket-in-Simulink">MathWorks TVC rocket example</a> — compare your final architecture against theirs; note the differences deliberately.</li>
+        <li><span class="tag tag-shared">Shared folder</span> Example TVC simulation code (<code>1.References\2. Example Code</code>) — instructor's caveat applies: no guarantee these are correct or best practice. Critique them; finding a flaw is fair game at MR-2.</li>
+        <li><a href="https://www.mathworks.com/help/aeroblks/6dofquaternion.html">Aerospace Blockset — 6DOF (Quaternion) block</a> — the rigid-body integrator for the 6DOF stretch; read its conventions before wiring it in.</li>
+        <li><a href="https://www.youtube.com/c/Eigensteve">Steve Brunton — Control Bootcamp</a> — the LQR lectures for the alternatives-to-PID notebook entry.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Monte_Carlo_method">Monte Carlo method</a> (Wikipedia) — the general principle behind the parameter-dispersion study, if the approach is new.</li>
+        <li><a href="https://www.mathworks.com/help/simulink/ug/simulink-simulation-in-a-loop.html">Running Simulink simulations in a loop</a> (MathWorks) — the practical mechanics of scripting many randomized runs efficiently.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Integrated sim + robustness study (pass rate + worst cases); frozen, versioned <code>vehicle_params.m</code>. Presented at MR-2.</div>
+    </div>
+  </article>
+
+  <div class="milestone">
+    <div class="label">Milestone Review · Day 10</div>
+    <h3>MR-2 — Control Readiness Review</h3>
+    <p>Ready when you can check every box:</p>
+    <ul>
+      <li>Closed-loop sim with discrete flight software (ZOH, fixed rate), limited servo, noisy sensors, estimator in the loop.</li>
+      <li>Gain-tuning history with quantified step response and disturbance rejection.</li>
+      <li>Sample-rate sweep showing where and why the loop destabilizes.</li>
+      <li>Estimator performance quantified (RMS error vs. truth) and the accelerometer-under-thrust caveat explained.</li>
+      <li>Robustness study across parameter dispersion, with worst cases identified.</li>
+      <li>Can answer: <em>Why does derivative gain amplify sensor noise, and what's the standard fix? What limits how low the sample rate can go? If the vehicle oscillates at 2 Hz on the bench next week, what are your first three suspects?</em></li>
+    </ul>
+  </div>
+
+  <div class="pagenav">
+    <a href="day09.html">← Day 09</a>
+    <a href="day11.html">Day 11 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 10</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

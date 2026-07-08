@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 09 — State Estimation | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 09 of 15</div>
+    <h1>State Estimation</h1>
+    <p class="lede">Navigation, finally: under thrust the accelerometer can't find "down," so in-flight attitude comes from propagating the gyro through the quaternion kinematic equation.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">09</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Explain why, for a rocket under powered flight, the <strong>accelerometer is useless as a gravity reference</strong> for attitude — thrust specific force swamps the 1 g of gravity — and why that forces a gyro-only attitude solution through the burn.</li>
+        <li>Implement the in-flight estimator: <strong>integrate the gyro through the quaternion kinematic equation</strong> (<code>q̇ = ½ q ⊗ [0; ω]</code>) from a known pad alignment, with per-step renormalization. This is the actual navigation your flight computer runs.</li>
+        <li>Use the accelerometer only where it's valid — <strong>on the pad, pre-ignition</strong> — to set the initial attitude, then trust the propagated gyro attitude through the flight.</li>
+        <li>Understand the <strong>complementary filter</strong> and <strong>Kalman filter</strong> conceptually, and articulate why this basic TVC flight doesn't need either during the burn.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Yesterday exposed a trade that felt like it wanted a filter: the gyro is smooth and responsive but drifts without bound, and the accelerometer is noisy but references gravity and so has no long-term drift. The textbook move is to fuse them — high-pass the gyro, low-pass the accelerometer's gravity direction, blend. That works beautifully for a phone, a drone hovering, or a rocket sitting on the pad. It breaks the instant the motor lights. An accelerometer measures <em>specific force</em>, not gravity, and under thrust the specific force is dominated by the engine — many g's along the body axis — with the 1 g of gravity buried underneath it and unrecoverable. During powered flight the accelerometer simply <strong>cannot tell you which way is down</strong>, so it cannot correct attitude, and any filter that leans on it will be actively misled. The honest consequence for this vehicle: through the burn, attitude comes from the <strong>gyro alone</strong>, integrated forward from a known starting orientation. You establish that starting orientation on the pad — where the vehicle is still and the accelerometer <em>is</em> a valid "down" reference — and from ignition onward you propagate attitude by integrating body rates through the quaternion kinematic equation from Day 3, renormalizing every step. The Kalman filter and complementary filter are worth understanding, and you'll meet them below, but for a 10–30 second TVC hop they solve a problem this vehicle doesn't have during the phase that matters. Today you build the estimator that flight actually needs: pad alignment, then gyro-driven quaternion propagation.
+      </div>
+
+      <h4>Concept 1 — Under thrust, the accelerometer cannot find "down"</h4>
+      <p>Day 8 established that an accelerometer reads specific force — the non-gravitational force per unit mass — which is why it usefully reads 1 g "up" when the vehicle is at rest and the only thing acting on the proof mass is the reaction to gravity. Attitude estimation by accelerometer relies entirely on that: if the only specific force is gravity's reaction, the measured vector points along "down" and gives you an absolute tilt reference. Powered flight destroys that assumption.</p>
+      <p>When the motor is burning, it produces a large specific force along the body axis — for a model TVC vehicle, easily 5–15 g during peak thrust. The accelerometer measures the <em>sum</em> of all specific forces, so its output is dominated by thrust, with gravity's 1 g contribution a small, inseparable fraction of the total. There is no way to subtract the thrust out to recover gravity: you would need to already know thrust magnitude, direction, mass, and drag precisely — and the direction is a function of the attitude you're trying to estimate in the first place. The measurement that was your absolute reference on the pad becomes, under thrust, a vector pointing essentially along the thrust axis and telling you nothing reliable about the gravity direction. <strong>During the burn, the accelerometer is useless for attitude.</strong> This isn't a tuning problem a cleverer filter fixes; it's physics. The gravity signal isn't noisy — it's buried and unrecoverable.</p>
+
+      <h4>Concept 2 — So attitude comes from the gyro alone, propagated forward</h4>
+      <p>If the accelerometer can't correct attitude during the phase that matters, the estimator has exactly one usable attitude source through the burn: the gyroscope. The gyro measures body angular rate <code>ω</code> directly and is not fooled by thrust — linear acceleration doesn't affect a rate gyro. The strategy that follows is the one real sounding rockets and TVC hops use:</p>
+      <ul>
+        <li><strong>Align on the pad.</strong> Before ignition the vehicle is still. The accelerometer is valid here, so use it (with the known vertical) to set the initial attitude — which way the body axis points relative to the world frame. This is the one and only time the accelerometer sets attitude.</li>
+        <li><strong>Propagate through the burn.</strong> From ignition onward, integrate the measured body rates forward from that initial attitude. You are <em>dead-reckoning</em> orientation: given where you started and how fast you've been rotating at every instant, you compute where you're pointing now. No external attitude correction is applied during flight.</li>
+        <li><strong>Accept bounded drift.</strong> Gyro bias makes this estimate drift, but only linearly with time (Day 8), and the flight is short — 10 to 30 seconds. A good MEMS gyro with a pad-measured bias removed drifts little enough over that window to fly. The short flight time is what makes gyro-only navigation viable; this same approach would be hopeless over an hour.</li>
+      </ul>
+      <p>This reframes the whole day. Navigation for this vehicle is not primarily a fusion problem — it's an <em>integration</em> problem, and the integration is exactly the quaternion kinematics you built on Day 3, now running in the flight loop.</p>
+
+      <h4>Concept 3 — The quaternion kinematic integration, step by step</h4>
+      <p>Here is the estimator that runs on the flight computer, once per control cycle. It is the discrete-time version of the Day 3 kinematic equation, and it is deliberately simple:</p>
+      <ol>
+        <li><strong>Initialize.</strong> On the pad, form the initial attitude quaternion <code>q₀</code> from the accelerometer-derived vertical (and a heading reference if you have one). Store it. Measure and store the gyro's resting bias <code>b</code> by averaging a few seconds of stationary output.</li>
+        <li><strong>Read and de-bias the gyro.</strong> Each cycle, read body rates and subtract the pad-measured bias: <code>ω = ω_measured − b</code>. This one subtraction is the single most valuable drift reduction available, and it's free.</li>
+        <li><strong>Form the rate quaternion and take the derivative.</strong> Build the pure quaternion <code>[0; ω]</code> and compute <code>q̇ = ½ · q ⊗ [0; ω]</code> — the Day 3 kinematic equation, with ω in the body frame exactly as the gyro reports it.</li>
+        <li><strong>Integrate one step.</strong> Advance the quaternion over the sample interval Δt. Forward Euler, <code>q ← q + q̇·Δt</code>, is the simplest and is often adequate at 100 Hz; a higher-order step (RK4, or the closed-form exponential-map update using the rotation-vector <code>ω·Δt</code>) drifts less per step and is preferred on the flight computer if cycles allow.</li>
+        <li><strong>Renormalize.</strong> Numerical integration walks the quaternion slightly off the unit sphere every step, so divide by its norm: <code>q ← q / |q|</code>. Skipping this corrupts the attitude within seconds (Day 3). One line, mandatory.</li>
+        <li><strong>Output attitude to the controller.</strong> Convert <code>q</code> to whatever the controller needs (a pitch/yaw error, or the DCM to resolve vectors) and hand it downstream. That's the navigation estimate for this cycle.</li>
+      </ol>
+      <p>That's the entire in-flight navigator: initialize once, then de-bias → <code>q̇ = ½ q ⊗ [0;ω]</code> → integrate → renormalize, every cycle. It's cheap enough to run comfortably on an Arduino-class microcontroller at 100 Hz, which is precisely why it — and not a full Kalman filter — is what this vehicle flies. Everything you did on Day 3 was building toward this loop.</p>
+
+      <div class="callout">
+        <span class="label">Why bias removal is the whole game</span>
+        With the accelerometer off the table during flight, the only thing standing between you and a good attitude estimate is gyro drift, and the dominant drift source is constant bias (Day 8). Measuring that bias on the pad — the gyro is stationary, so anything it reads is bias — and subtracting it every cycle turns a fast-diverging estimate into a slow one. Over a 30-second flight, the difference between de-biased and raw gyro integration is frequently the difference between a usable attitude and a tumble. If you do one thing well in this estimator, make it the pad bias calibration.
+      </div>
+
+      <h4>Concept 4 — Where filters fit, and why this flight doesn't need one</h4>
+      <p>The complementary filter and the Kalman filter are the right tools when you have a <em>trustworthy</em> second source to correct the gyro — and it's worth understanding both, because the moment you add a phase where the accelerometer is valid (a slow hover, a coast, a future vehicle), they become the correct design.</p>
+      <ul>
+        <li><strong>Complementary filter.</strong> High-pass the gyro-integrated attitude (trust it for fast changes, before drift builds) and low-pass the accelerometer's gravity-derived attitude (trust it for the slow, absolute answer), blended with a single crossover-frequency knob. Cheap and effective — <em>when the accelerometer is valid.</em> During a TVC burn it isn't, so the low-pass branch has nothing true to contribute and the filter degenerates to gyro-only anyway. On the pad and during unpowered coast, though, it's exactly right for holding alignment.</li>
+        <li><strong>Kalman filter.</strong> The principled version: predict attitude forward with the gyro (the same quaternion propagation above), and correct with any measurement whose uncertainty you can model, weighting each by its relative confidence. Its power is that it can formally down-weight the accelerometer when it's unreliable — in principle handling the thrust phase by trusting it near-zero during the burn. But that's precisely what gyro-only propagation already does, at a fraction of the complexity. For a short-burn TVC hop, a full quaternion Kalman filter (with bias states) is more machinery than the problem requires; its main payoff — optimally blending a good accelerometer — is unavailable during the phase you most need attitude.</li>
+      </ul>
+      <p>So understand them, and note the honest engineering call: <strong>this vehicle flies gyro-only quaternion propagation with pad alignment</strong>, because the burn is short, the accelerometer is invalid under thrust, and bias-compensated integration is accurate enough over the flight. A Kalman filter is the right next step the day you extend to a longer flight, a powered descent with coast phases, or add GPS/barometer position fusion — and it's worth building once for the learning. Today's notebook entry is exactly this reasoning: justify, in writing, why gyro-only is sufficient here and name the specific mission change that would make you reach for the Kalman filter.</p>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Add an <code>Estimator</code> block inside Flight Software, upstream of the controller, at the same sample rate and discrete style. Implement it as: pad alignment + bias capture, then per-cycle gyro de-bias → quaternion kinematic integration → renormalize.</li>
+        <li>Demonstrate the accelerometer failure directly: plot the accelerometer-derived "down" vector through a simulated burn and show it points along thrust, not gravity — the empirical proof that it can't be used in flight.</li>
+        <li>Plot estimated vs. true attitude through a full simulated flight; report RMS attitude error for three gyro-bias levels, with and without pad bias removal. Quantify how much the pad calibration buys you.</li>
+        <li>Swap the controller's input from truth to the gyro-propagated estimate. Re-verify the Day 6 test cases — this is the honest closed loop the hardware will run.</li>
+        <li>Notebook entry: justify gyro-only navigation for this flight, and state the specific mission change (longer flight, coast/hover phase, position fusion) that would make a Kalman filter worth the complexity.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Trying to use the accelerometer for attitude in flight.</strong> Under thrust it points along the thrust axis, not down. A filter that trusts it during the burn will be driven to a wrong attitude. Correct only on the pad.</li>
+          <li><strong>Skipping pad bias calibration.</strong> Raw gyro integration drifts far faster than de-biased. The stationary pad interval is a free, high-value bias measurement — use it.</li>
+          <li><strong>Forgetting renormalization.</strong> The Day 3 lesson applies unchanged: <code>q ← q/|q|</code> every step, or attitude silently corrupts within seconds.</li>
+          <li><strong>Euler-angle integration instead of quaternion.</strong> A rocket pitches through large angles; integrating Euler angles reintroduces gimbal lock (Day 2). Propagate the quaternion.</li>
+          <li><strong>Over-engineering the estimator.</strong> Reaching for a full Kalman filter here adds states and tuning without addressing the actual constraint (no valid attitude aid under thrust). Match the estimator to the mission.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://ahrs.readthedocs.io/en/latest/filters/angular.html">Attitude from angular rate — quaternion integration</a> (AHRS docs) — the exact gyro-only propagation this estimator uses, with the discrete update written out.</li>
+        <li><a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">A Practical Approach to Kalman Filter and How to Implement It</a> — TKJ Electronics (the classic 1D angle/bias KF; build it to understand the tool, then note why the burn phase doesn't benefit from it).</li>
+        <li>Understanding Sensor Fusion and Tracking — MATLAB Tech Talks, remaining episodes (the complementary-filter and KF intuition, and when each is appropriate).</li>
+        <li><a href="https://www.youtube.com/c/Eigensteve">Steve Brunton — Control Bootcamp</a> (deeper Kalman theory, reference as needed for the notebook justification).</li>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — quaternion kinematics sections (the propagation equation you're integrating, revisited from Day 3).</li>
+        <li><a href="https://github.com/peregrine-developments/Orientation">Arduino quaternion/orientation library</a> — the same propagation in C++; you'll evaluate it for the Phase 3 flight code on Day 13.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Dead_reckoning">Dead reckoning</a> (Wikipedia) — the general principle (known start + integrated motion → current state) that gyro-only attitude propagation is an instance of, including why bounded time is what keeps it viable.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Gyro-only quaternion estimator in the loop (pad alignment + bias removal + kinematic integration + renormalization); plot showing the accelerometer pointing along thrust in flight; estimate-vs-truth RMS error with/without bias removal; closed loop verified on the propagated estimate; notebook justification for gyro-only vs. Kalman.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day08.html">← Day 08</a>
+    <a href="day10.html">Day 10 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 09</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

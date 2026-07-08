@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 07 — Actuators, Limits &amp; Discrete-Time Flight Software | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 07 of 15</div>
+    <h1>Actuators, Limits &amp; Discrete-Time Flight Software</h1>
+    <p class="lede">Real servos are slow, limited, and sampled. Restructure the model so the flight software runs the way it will on the Arduino.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">07</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Model the TVC servo: angle saturation (±5°), rate limit, and a first-order lag or transport delay. Observe the phase lag it adds and what that does to your margins.</li>
+        <li>Explain continuous vs. discrete time: the analysis lives in continuous time, but <strong>everything on a microcontroller is discrete</strong>. Convert your controller to run at a fixed sample rate (start at 100 Hz) behind <strong>zero-order holds</strong>.</li>
+        <li>Find the breaking point: lower the sample rate (100 → 50 → 25 → 10 Hz) until the loop destabilizes, and connect that to the phase lag of sampling (≈ half a sample period plus compute delay).</li>
+        <li>Implement anti-windup: clamp or back-calculate the integrator when the gimbal saturates.</li>
+      </ul>
+
+      <div class="callout steel">
+        <span class="label">Primer</span>
+        Yesterday's controller lived in a fantasy: infinite actuator authority, continuous time, zero delay. Today you take away each of those comforts, one at a time, because the gap between "works in theory" and "works on hardware" is exactly the set of effects introduced here. A real servo saturates at some maximum angle, can't slew infinitely fast, and lags the command slightly — each of these eats into your stability margin, and the point of modeling them now (not in Phase 3, when debugging is much harder) is to see that erosion in a place where you can plot it. The bigger conceptual shift is continuous vs. discrete time: your Simulink analysis so far has been continuous, but a microcontroller only ever knows the world at discrete instants, sampling in, computing, and holding its output constant until the next tick — a <strong>zero-order hold</strong>. That hold is itself a source of phase lag (roughly half a sample period), which is why lowering the sample rate eventually destabilizes a loop that was perfectly stable in continuous time; finding that breaking point by sweeping the rate down is the fastest way to build intuition for why 100 Hz is the number this course starts with. Restructuring the flight software into this exact discrete, ZOH-sampled form today is what makes the eventual Arduino port in Phase 3 a direct translation instead of a redesign.
+      </div>
+
+      <h4>Concept 1 — Three separate servo imperfections, and what each does to the loop</h4>
+      <p>"The servo isn't ideal" is really three distinct effects, and it's worth modeling them separately because they fail the loop in different ways:</p>
+      <ul>
+        <li><strong>Angle saturation (±5°).</strong> A hard clip: command more and you still get 5°. The danger isn't the clip itself but what it does downstream — during saturation the loop is effectively <em>open</em> (more command produces no more correction), which is when integrator windup happens and when a marginally-stable loop can run away. This is the limit your Day 6 tuning may already have been violating.</li>
+        <li><strong>Rate limit (slew rate).</strong> The servo can only move so fast (deg/s). Even within its angle range, a fast command gets tracked with a lag, and a controller demanding rapid reversals gets a rounded-off, delayed version of what it asked for. Rate limiting is a nonlinearity — it can induce oscillations that linear analysis won't predict.</li>
+        <li><strong>Lag / transport delay.</strong> A first-order lag (the servo's finite bandwidth) or a pure transport delay (communication + mechanical response time) between command and motion. This is the sneaky one: pure phase lag with no amplitude change, and phase lag is exactly what erodes stability margin. A loop with plenty of gain margin can still go unstable from accumulated delay.</li>
+      </ul>
+      <p>Model all three in the Actuator subsystem (which you left as a pass-through on Day 5 — this is why it got its own block). The combined effect is that your beautiful continuous-time tune from Day 6 will have <em>less</em> margin than it looked like, sometimes dramatically. Seeing that gap is the whole point.</p>
+
+      <h4>Concept 2 — Continuous vs discrete: what actually changes</h4>
+      <p>Your analysis and intuition are continuous-time, but the flight computer is a sampled system: at each tick it reads sensors, computes once, writes the actuator command, and then <strong>holds that output constant</strong> until the next tick. That hold is the zero-order hold (ZOH). Three consequences to internalize:</p>
+      <ul>
+        <li><strong>The world moves while you're not looking.</strong> Between samples the vehicle keeps rotating, but the controller's output is frozen. At 100 Hz that's a 10 ms blind-and-frozen window per cycle; at 10 Hz it's 100 ms, which for a fast-diverging rocket is an eternity.</li>
+        <li><strong>ZOH adds phase lag.</strong> Holding the output constant for one sample period is, on average, like delaying it by half a sample period. That half-sample delay is pure phase lag added to your loop — the same margin-eroder as actuator delay, now coming from the sampling itself.</li>
+        <li><strong>Integrals and derivatives become sums and differences.</strong> The continuous <code>∫e dt</code> becomes a running sum (<code>× Δt</code>), and <code>ė</code> becomes a finite difference (<code>Δe / Δt</code>). These approximations get worse as Δt grows — another reason low sample rates bite.</li>
+      </ul>
+      <p>The key mental model: <strong>sampling isn't free.</strong> A controller that's rock-solid in continuous time has a finite sample-rate budget below which it will fail, and that budget is set by how fast the plant can diverge relative to how often you correct it.</p>
+
+      <h4>Concept 3 — The sample-rate sweep: watching margin evaporate</h4>
+      <p>The sweep (100 → 50 → 25 → 10 Hz) is the day's signature experiment because it makes an abstract idea — "discretization costs stability margin" — into a plot you can point at. As you halve the rate, you double the ZOH phase lag, and at some rate the accumulated lag pushes the loop past its stability margin and it oscillates, then diverges. Connect the breaking point back to the numbers: the destabilizing rate is where the sampling lag (≈ half a sample period) plus actuator lag plus compute delay overwhelms the phase margin your Day 6 tune had in reserve. This is <em>also</em> the experiment that justifies the design number: the course starts at 100 Hz not arbitrarily, but because it sits comfortably above the breaking point with margin to spare for the effects still to come (sensor noise, estimator lag). Record where <em>your</em> loop breaks — it's vehicle- and gain-specific, and knowing your own margin tells you how much budget you have for everything Phase 2 still adds.</p>
+
+      <h4>Concept 4 — Anti-windup: the fix saturation forces on you</h4>
+      <p>Concept 1 flagged that saturation opens the loop; anti-windup is the required response. Here's the failure in slow motion: the vehicle is far off target, so error is large and persistent; the integrator dutifully accumulates a bigger and bigger command; but the gimbal is pinned at ±5° and physically can't act on it. When the vehicle finally comes back toward target and the error reverses sign, the integrator is still holding an enormous "wound-up" value that takes a long time to unwind — so the vehicle blows straight through the target with a huge overshoot and a slow secondary oscillation. Two standard fixes:</p>
+      <ul>
+        <li><strong>Clamping (conditional integration):</strong> simply stop accumulating the integral whenever the output is saturated. Easy, robust, and usually enough for this application.</li>
+        <li><strong>Back-calculation:</strong> feed the difference between the commanded and the actually-delivered (saturated) output back to "unwind" the integrator at a tuned rate. Smoother recovery, one extra gain to tune.</li>
+      </ul>
+      <p>Demonstrate the difference explicitly: the same large-attitude-command test with anti-windup off (big overshoot, slow recovery) and on (clean recovery). This is one of the clearest before/after plots in the whole course, and it's essential wisdom for the Phase 3 microcontroller code where the same integer integrator can wind up just as badly.</p>
+
+      <div class="callout">
+        <span class="label">Why do this in simulation first</span>
+        Every effect today — saturation, rate limit, lag, discretization, windup — <em>will</em> occur on the real hardware in Phase 3. The reason to introduce them in the model now is observability: in Simulink you can plot the internal integrator state, freeze time, and sweep a parameter cleanly. On the Arduino, a windup-induced overshoot looks like a crashed rocket and a mystery. Debugging these effects where they're visible, then porting a design that already accounts for them, is the entire logic of the Phase 2 → Phase 3 sequence.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Restructure the top level per the recommended architecture: continuous Plant + Actuator, discrete Flight Software subsystem sampled through ZOH blocks. This structure is non-negotiable — it is what makes the Phase 3 port honest.</li>
+        <li>Re-tune gains for the discrete, saturated loop. Document what changed and why (expect to back off gains relative to the ideal-plant tune — note by how much).</li>
+        <li>Run the sample-rate sweep (100 → 50 → 25 → 10 Hz) and record the rate at which your loop destabilizes. Relate it to the phase-lag budget.</li>
+        <li>Demonstrate windup with and without your anti-windup fix during a large attitude command — capture the before/after overshoot numbers.</li>
+        <li>Add the servo lag/rate limit and compare stability margin to the Day 6 baseline. Quantify how much margin the actuator realism cost you.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Carrying over Day 6 gains unchanged.</strong> The ideal-plant tune almost certainly has too much gain for the discrete, delayed, saturated loop. Re-tune; don't assume.</li>
+          <li><strong>Sample time defined in one place only.</strong> Δt appears in the integral, the derivative, and the ZOH. Define it once as a parameter and reference it everywhere, or they'll drift out of sync.</li>
+          <li><strong>Derivative across the sample.</strong> A finite-difference derivative on a noisy or stepped signal is spiky; combined with the ZOH it gets worse. This is why derivative filtering (Day 8) becomes necessary — note the setup.</li>
+          <li><strong>Anti-windup that also kills normal integral action.</strong> Clamp only when actually saturated, not always, or you lose the steady-state trim the integrator is there to provide.</li>
+          <li><strong>Mixing continuous and discrete signals without a ZOH.</strong> Feeding a continuous signal straight into the discrete controller (or vice versa) without an explicit sample-and-hold gives misleading results that won't match the hardware.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://github.com/br3ttb/Arduino-PID-Library">Arduino PID Library</a> — Brett Beauregard (read the source and comments; it is exactly the discrete-implementation wisdom you need — sample time, derivative-on-measurement, integrator clamping).</li>
+        <li><a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — the blog series behind that library; the sections on sample time, derivative kick, and windup are the written form of today's whole lesson.</li>
+        <li>Understanding PID Control — remaining episodes (anti-windup, derivative filtering).</li>
+        <li><a href="https://www.mathworks.com/help/simulink/slref/anti-windup-control-using-a-pid-controller.html">Anti-Windup Control Using a PID Controller</a> — MathWorks documentation.</li>
+        <li><a href="https://www.youtube.com/watch?v=fusr9eTceEo">Discrete control / sampling and the zero-order hold</a> — Brian Douglas (the clearest short explanation of why sampling adds phase lag and destabilizes loops).</li>
+        <li><a href="https://www.mathworks.com/help/control/ug/discretize-a-compensator.html">Discretizing a continuous controller</a> (MathWorks) — Tustin vs ZOH vs matched methods, for converting your continuous design to discrete cleanly.</li>
+        <li><a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How servo motors work &amp; interfacing with Arduino</a> — grounds the abstract "servo lag and rate limit" in the actual hardware you'll drive in Phase 3.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Discrete-time flight-software subsystem @ 100 Hz with ZOH; sample-rate sweep plot with the destabilization point identified; anti-windup before/after demonstration; documented re-tune with margin comparison to the Day 6 baseline.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day06.html">← Day 06</a>
+    <a href="day08.html">Day 08 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 07</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
