@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 12 — Sensor Bring-Up: IMU + Barometer over I&sup2;C | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 12 of 15</div>
+    <h1>Sensor Bring-Up: IMU + Barometer over I&sup2;C</h1>
+    <p class="lede">Navigation inputs. Get clean, correctly-scaled, correctly-signed data before you trust a single computed angle.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">12</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Understand the two serial buses you're using: <strong>I²C</strong> (sensors, shared two-wire bus, addresses) and <strong>UART/Serial</strong> (telemetry to the laptop).</li>
+        <li>Bring up the BNO085 (gyro + accel + mag) and BMP390 (baro) on the STEMMA QT / Qwiic-compatible I²C bus; configure ranges and output data rates deliberately (gyro range must cover expected body rates; ODR ≥ your loop rate).</li>
+        <li>Verify axes and signs against the datasheet: physically rotate the board about each axis and confirm the sign convention matches the body frame in your sim. Sign errors here are the classic "controller fights itself" bug.</li>
+        <li>Characterize the real sensors: log 60 s of stationary data; compute gyro bias and noise standard deviation; compare against the datasheet numbers you used in the Day 8 sim.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Day 8's sensor model was built from datasheet numbers — plausible, but not yet true for <em>your</em> IMU on <em>your</em> board. Today closes that gap: the loop skeleton from Day 11 gets its first real inputs. Mechanically this means learning I²C, the two-wire addressed bus your IMU and barometer share, and configuring each sensor deliberately rather than accepting defaults — the gyro's measurement range has to cover the body rates you actually expect, and its output data rate has to meet or exceed your 100 Hz loop or you'll be reading stale samples. The single most important check today is the boring one: physically rotate the board about each axis by hand and confirm the sign of the reported rate matches the body-frame convention your simulation assumes. Get a sign wrong here and the symptom shows up two days from now as "the controller fights itself" — the gimbal visibly correcting in the wrong direction — which is a miserable bug to trace back to its source if you didn't rule it out at the point of contact. Finally, log 60 seconds of the board sitting still and compute the real gyro bias and noise standard deviation; comparing that measured number against the datasheet value you used Day 8 is the first place simulation and hardware are forced to agree on a shared truth, and you'll feed the real number back into the sim before moving on.
+      </div>
+
+      <h4>Concept 1 — Two buses, two jobs: I²C and UART</h4>
+      <p>Two different serial buses are doing two different things on your board, and keeping them straight prevents a lot of confusion:</p>
+      <ul>
+        <li><strong>I²C (Inter-Integrated Circuit)</strong> — a two-wire bus (a clock line SCL and a data line SDA) shared by multiple devices, each with its own address. Your IMU and barometer both hang off the same two wires; the microcontroller talks to one at a time by addressing it. This is why STEMMA QT / Qwiic connectors let you daisy-chain sensors — they're all on one bus. Two practical consequences: every device needs a <em>unique</em> address (an address collision is a classic bring-up failure), and the bus has a finite speed budget shared across all devices, so reading a lot of data from several sensors eats into your loop time.</li>
+        <li><strong>UART / Serial</strong> — a point-to-point link, here carrying telemetry from the board to your laptop over USB. This is your window into the running system: the serial monitor for numbers, the serial plotter for live traces. It's not part of the control path — it's how you observe it.</li>
+      </ul>
+      <p>The mental model: I²C is how the flight computer <em>gathers</em> its world; UART is how <em>you</em> watch the flight computer. Confusing "the sensor isn't working" with "the telemetry isn't printing" is avoidable once you hold that distinction.</p>
+
+      <h4>Concept 2 — Configure deliberately: range and output data rate</h4>
+      <p>Sensor defaults are set for general use, not your rocket, and two settings in particular must be chosen on purpose:</p>
+      <ul>
+        <li><strong>Measurement range.</strong> A gyro configured for ±250°/s will <em>saturate</em> — clip and report garbage — if the vehicle rotates faster than that during a fast correction or a tip-over. Pick a range that comfortably covers the body rates you saw in simulation, with margin. Too small a range clips; too large wastes resolution, so match it to expected motion.</li>
+        <li><strong>Output data rate (ODR).</strong> The sensor produces new samples at its own configured rate. That rate must be <em>at least</em> your 100 Hz loop rate — ideally higher — or your loop will sometimes read the same sample twice ("stale data"), which is a subtle way to inject lag and noise into the estimator. ODR ≥ loop rate is the rule.</li>
+      </ul>
+      <p>Note the BNO085 has a wrinkle worth knowing: it's a "smart" sensor that can output either raw data or its own internal fused orientation. For this course you generally want the <em>raw</em> gyro and accelerometer (you're building your own estimator on Day 13 — that's the point of the course), though the fused output is a useful independent cross-check. Decide deliberately which you're using and why.</p>
+
+      <h4>Concept 3 — The sign check is the most important thing you do today</h4>
+      <p>The primer calls the axis-and-sign check "the boring one," and it is — which is exactly why it gets skipped and exactly why it causes the worst bugs. Here's the failure chain: your simulation assumes a particular body-frame convention (Day 2) — say, positive pitch rate is nose-up. If the physical gyro reports nose-up as <em>negative</em> (because the chip is mounted rotated, or its axis convention differs from your sim's), then every downstream sign is inverted. The estimator integrates a flipped rate, the controller computes a correction, and the gimbal deflects the <em>wrong way</em> — driving the vehicle further off instead of correcting. That's positive feedback on an already-unstable plant: the textbook "controller fights itself," and on Day 14 it looks like the vehicle violently diverging the instant you close the loop.</p>
+      <p>The check is trivial and catches it at the source: rotate the board nose-up by hand, watch the reported pitch rate, and confirm its sign matches what your sim calls nose-up. Repeat for all three axes, and for the accelerometer (tilt and confirm the gravity vector lands on the axis and sign you expect). Do this <em>now</em>, at the point of contact, when the only thing that can be wrong is the sensor mapping — because two days from now the same symptom could be the gyro, the estimator, the controller, or the servo wiring, and you'll wish you'd ruled this out.</p>
+
+      <h4>Concept 4 — Characterize the real sensor, close the sim-hardware loop</h4>
+      <p>This is the moment simulation and hardware first meet on shared ground. Log 60 seconds of the board sitting perfectly still and compute, from that data, the two numbers you assumed from the datasheet on Day 8:</p>
+      <ul>
+        <li><strong>Gyro bias</strong> — the mean of each axis while stationary. The vehicle isn't rotating, so anything nonzero is bias. This is the exact number your Day 13 estimator will subtract, and the exact number whose drift consequence you modeled on Day 8.</li>
+        <li><strong>Noise standard deviation</strong> — the spread around that mean. This is the real white-noise level your estimator and controller must tolerate.</li>
+      </ul>
+      <p>Then compare: does your measured bias and σ match the datasheet values you put in the Day 8 sim? Often they're close; sometimes the real part is noticeably better or worse than spec. Either way, <strong>feed the measured numbers back into the Simulink sensor model</strong> so the sim now reflects your actual hardware. From this point on, sim and bench share one truth — which is what makes the Day 14 sim-vs-hardware comparison meaningful rather than a comparison against made-up numbers. This closed feedback (measure real → update model → compare) is the core discipline of the whole hardware phase.</p>
+
+      <div class="callout">
+        <span class="label">Log everything, starting now</span>
+        From today forward, every bench test gets logged — CSV over serial to a file, and/or to SD/flash if the board supports it. This isn't bureaucracy: when the closed loop misbehaves on Day 14, the <em>only</em> way to diagnose it "like an engineer, not a guess" (as Day 14 puts it) is to have the data — what the gyro read, what the estimator computed, what the controller commanded, what the servo did, all timestamped. A bug you can see in a log is a bug you can fix; a bug you only witnessed live is a bug you get to reproduce from scratch. Set up clean, timestamped logging now while the system is simple, so it's already there when you need it under pressure.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Integrate sensor reads into the 100 Hz skeleton (no blocking waits — check data-ready). Confirm the timing telemetry from Day 11 still holds rate with real reads in the loop.</li>
+        <li>Do the axis/sign check explicitly for all three gyro axes and the accelerometer; record the mapping in your notebook. This is the highest-value ten minutes of the day.</li>
+        <li>Log data: stream CSV over serial and capture to file, and/or write to SD/flash if your board supports it. Every bench test from now on gets logged.</li>
+        <li>Compute measured gyro bias and σ from a 60 s stationary log; build the characterization table against the datasheet values.</li>
+        <li>Update your Simulink sensor model with the measured noise/bias values. The sim and the hardware should now share one truth.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Skipping the sign check.</strong> The single most expensive omission of Phase 3. Ten minutes now saves a day of Day-14 misery. Verify every axis.</li>
+          <li><strong>Blocking sensor reads.</strong> A library call that waits for data is a hidden <code>delay()</code> that jitters your loop (Day 11). Check data-ready flags; don't busy-wait.</li>
+          <li><strong>ODR below loop rate.</strong> If the sensor updates slower than 100 Hz, you re-read stale samples and inject lag. Set ODR ≥ loop rate.</li>
+          <li><strong>Gyro range too small.</strong> A fast slew that exceeds the configured range saturates the gyro and corrupts the estimate exactly when you need it most.</li>
+          <li><strong>Trusting the datasheet over your measurement.</strong> Your specific part is the truth for your vehicle. Measure bias and σ; feed the real numbers back into the sim.</li>
+          <li><strong>I²C address collisions or missing pull-ups.</strong> Two devices at one address, or a bus without proper pull-up resistors, produces flaky or absent data — check the bus before blaming the sensor.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://learn.adafruit.com/adafruit-9-dof-orientation-imu-fusion-breakout-bno085">Adafruit BNO085</a> guide — wiring, library setup, and the raw-vs-fused output modes for the IMU.</li>
+        <li><a href="https://learn.adafruit.com/adafruit-bmp388-bmp390-bmp3xx">Adafruit BMP390</a> guide — bring-up for the barometer.</li>
+        <li><a href="https://learn.sparkfun.com/tutorials/i2c">I²C explained</a> (SparkFun) — how the two-wire addressed bus works, if I²C is new; grounds the addresses/pull-ups/speed points.</li>
+        <li><a href="https://learn.adafruit.com/working-with-multiple-i2c-devices">Working with multiple I²C devices</a> (Adafruit) — addresses, collisions, and sharing one bus between IMU and barometer.</li>
+        <li><a href="https://www.arduino.cc/reference/en/language/functions/communication/serial/">Arduino Serial reference</a> — for streaming clean CSV telemetry to capture logs.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Live gyro/accel/baro telemetry at loop rate; documented axis/sign mapping; stationary-log characterization table (bias, σ) vs. datasheet; sim noise model updated with measured values.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day11.html">← Day 11</a>
+    <a href="day13.html">Day 13 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 12</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

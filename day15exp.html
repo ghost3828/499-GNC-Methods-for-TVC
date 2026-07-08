@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 15 — Final Demo, Briefing &amp; Report | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 15 of 15 · Milestone</div>
+    <h1>Final Demo, Briefing &amp; Report</h1>
+    <p class="lede">Show it, defend it, write it down so the next cadet can pick it up.</p>
+  </section>
+
+  <article class="day review-day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">15</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Deliver MR-3: live bench demo plus a 15-minute briefing covering architecture, models, results, and the sim-vs-hardware comparison.</li>
+        <li>Submit the final report (10–15 pages): GNC architecture; dynamics derivation; sim design and verification; control design and tuning rationale; estimation design; hardware implementation; results; lessons learned; and a concrete "path to flight" section — what remains before this vehicle could attempt free flight (6DOF validation, ignition/abort logic, structural work, range safety).</li>
+        <li>Leave the repository in a state a future student could clone and continue: README, parameter files, wiring notes, and the notebook complete.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Fifteen days ago this began with a block diagram of a loop that didn't exist yet; today that loop runs live, on the bench, on hardware you brought up yourself. The final demo and briefing are not a new deliverable so much as the moment you narrate the story the last two weeks already told: why a TVC rocket needs active control, how attitude is represented and propagated, how the dynamics and torque model were derived and verified, how the controller was tuned and then made robust to actuator limits, discrete time, and sensor noise, and what changed — and why — going from simulation to real hardware. The written report asks for the same story in a more durable form, closing with a "path to flight" section that is deliberately honest about what this benchtop study did <em>not</em> prove: full 6DOF behavior, ignition and abort logic, structural qualification, range safety. Naming those gaps explicitly is good engineering, not an admission of failure. The last task — leaving the repository, parameter files, wiring notes, and notebook in a state a future student could clone and pick up cold — is the same discipline that made Phase 3 possible in the first place: nothing here worked because of a clever last-minute trick, it worked because each day built cleanly on a well-documented previous one.
+      </div>
+
+      <h4>Concept 1 — The briefing is an argument, not a tour</h4>
+      <p>A weak final briefing narrates what you did in order ("first we derived the equations, then we built the sim…"). A strong one makes an <em>argument</em>: the vehicle is unstable, here is why, here is the system we built to stabilize it, and here is the evidence it works. Structure the 15 minutes around that spine, with each earlier phase appearing as a link in the chain rather than a chapter to recount:</p>
+      <ul>
+        <li><strong>The problem (≈2 min).</strong> Why a TVC rocket needs active control — the inverted-pendulum instability from Day 1, ideally with the Day 5 open-loop tumble plot as Exhibit A. This motivates everything after it.</li>
+        <li><strong>The approach (≈4 min).</strong> The GNC architecture, attitude representation and gyro propagation, the dynamics/torque model — compressed to the decisions that mattered, not every derivation.</li>
+        <li><strong>The results (≈6 min).</strong> The closed loop working in sim, the robustness envelope, and the hardware bring-up culminating in the live demo and the sim-vs-hardware overlay. This is where the time goes.</li>
+        <li><strong>The honest gaps and next steps (≈3 min).</strong> The path-to-flight section — what remains unproven. Owning the limits builds more credibility than overclaiming.</li>
+      </ul>
+      <p>Know your audience: reviewers will probe the reasoning, not just the outcome. The MR-3 questions — what surprised you sim-to-hardware, which model improvement would most reduce the gap, what's the next test toward flight — are argument questions, and they're on the checklist because a good engineer can answer them from evidence.</p>
+
+      <h4>Concept 2 — The live demo: make it robust, have a backup</h4>
+      <p>The tilt demo is the emotional peak of the briefing and the riskiest 60 seconds in it. Two principles keep it from undoing the whole story. First, <strong>engineer the demo for reliability</strong>: fresh battery, secured connectors, a known-good startup sequence you've rehearsed (Day 14), and a clear stillness period for gyro-bias calibration before you touch it. Second, <strong>have a recorded fallback</strong>: capture a clean video of the working tilt demo and the step-response overlay <em>before</em> MR-3, so that if the live hardware misbehaves in the room, you can show it working and then diagnose the live anomaly on the spot — which, done well, is itself a display of engineering skill. A live failure you can explain from your logs is recoverable; a live failure with no fallback and no explanation is not. Reviewers understand hardware is fickle; they're evaluating whether you understand <em>your</em> hardware.</p>
+
+      <h4>Concept 3 — The report: the durable artifact</h4>
+      <p>The 10–15 page report is what outlives the demo — it's how this work becomes a foundation someone builds on rather than a thing that happened once. Its structure mirrors the course, and each section should state not just <em>what</em> but <em>why</em> and <em>how you know it's right</em>:</p>
+      <ul>
+        <li><strong>GNC architecture</strong> — the loop and the four-subsystem structure, and why that separation mattered.</li>
+        <li><strong>Dynamics derivation</strong> — the 3DOF EOM and TVC torque model, with the verification cases that proved them.</li>
+        <li><strong>Simulation design and verification</strong> — the model, the sanity checks, the instability demonstration.</li>
+        <li><strong>Control design and tuning rationale</strong> — not just final gains but <em>why</em> them; the failure modes explored; the discrete/saturated re-tune.</li>
+        <li><strong>Estimation design</strong> — gyro-quaternion propagation, pad alignment, and the accelerometer-under-thrust reasoning that drove the gyro-only choice.</li>
+        <li><strong>Hardware implementation</strong> — the port, sensor characterization, the closed loop.</li>
+        <li><strong>Results</strong> — sim performance, robustness envelope, and the sim-vs-hardware comparison with evidence-based explanations.</li>
+        <li><strong>Lessons learned</strong> — the honest account of what surprised you and what you'd do differently.</li>
+        <li><strong>Path to flight</strong> — Concept 4.</li>
+      </ul>
+      <p>Write for a reader with your background but none of your context — the future student who clones the repo. Every figure should be captioned to stand alone; every gain and rate should trace back to a justification.</p>
+
+      <h4>Concept 4 — Path to flight: honesty as engineering</h4>
+      <p>The path-to-flight section is where the report earns its credibility by being explicit about what a benchtop study <em>cannot</em> prove. This isn't hedging — it's the professional standard for reporting a result, and it's also the roadmap for whoever continues the work. Name the specific gaps between "the gimbal corrects when I tilt it on the bench" and "this vehicle could safely attempt powered flight":</p>
+      <ul>
+        <li><strong>Full 6DOF validation</strong> — the bench proved single/limited-axis correction at rest; real flight couples pitch, yaw, and roll under thrust, which the planar work only approximated.</li>
+        <li><strong>Flight-representative estimation</strong> — the flight estimator is gyro-only through the burn (the accelerometer is invalid under thrust, Day 9); flight-like validation requires representative dynamics and vibration, not a hand-tilted bench.</li>
+        <li><strong>Ignition and abort logic</strong> — state machine for arming, ignition detection, and safe abort — none of which a bench demo exercises.</li>
+        <li><strong>Structural qualification</strong> — the airframe, mount, and electronics surviving thrust loads, vibration, and landing.</li>
+        <li><strong>Range safety</strong> — the procedures, approvals, and recovery that any powered flight attempt requires.</li>
+      </ul>
+      <p>Stating these plainly does the opposite of undermining the work — it demonstrates that you understand the difference between a controls demonstration and a flight vehicle, which is exactly the judgment the course is trying to build. The final MR-3 question — "what is the very next test on the path to a real flight?" — is answered here.</p>
+
+      <div class="callout">
+        <span class="label">The handoff is part of the deliverable</span>
+        The repository handoff isn't administrative cleanup — it's the same discipline that made this project possible, applied one last time. Phase 3 worked because Phase 1 and 2 were documented well enough to build on; the next student's Phase 4 depends on yours being the same. Leave it clone-and-continue ready: a README that explains the structure and how to run both sim and flight software, the versioned <code>vehicle_params.m</code> with justified values, wiring notes and the axis/sign mappings from Day 12, the complete lab notebook, and the logs behind your key plots. A good test: could someone with your background, and none of your memory, reproduce your MR-3 demo from the repo alone? If yes, you've left a foundation; if no, you've left a story that ends with you.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Deliver the MR-3 demo and 15-minute briefing structured as an argument (problem → approach → results → gaps), with a recorded fallback of the working demo and overlay.</li>
+        <li>Submit the final report (10–15 pages) with the sections above, each stating what, why, and how it was verified; captioned figures; justified parameters.</li>
+        <li>Complete the path-to-flight section naming the specific unproven gaps and the next concrete test.</li>
+        <li>Leave the repository clone-and-continue ready: README, versioned parameter files, wiring/sign notes, complete notebook, and the logs behind key plots.</li>
+        <li>Review your own notebook and prior deliverables in preparation for the briefing questions.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Narrating instead of arguing.</strong> A chronological tour of tasks buries the point. Lead with the instability, build to the evidence it's solved.</li>
+          <li><strong>No demo fallback.</strong> Live hardware can fail in the room. A pre-recorded working demo turns a potential disaster into a diagnose-it-live moment.</li>
+          <li><strong>Overclaiming.</strong> "It works" without the caveats reads as naïve to reviewers. The path-to-flight honesty is what builds credibility.</li>
+          <li><strong>Uncaptioned or untraceable figures.</strong> A plot the reader can't interpret alone, or a gain with no justification, weakens an otherwise strong report.</li>
+          <li><strong>A repository only you can navigate.</strong> If the next student can't reproduce MR-3 from the repo, the handoff failed. Write for someone with none of your context.</li>
+          <li><strong>Treating lessons-learned as filler.</strong> The honest account of what surprised you is often the most valuable page for the next person — write it seriously.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li>Review your own notebook and prior deliverables in preparation for the briefing.</li>
+        <li><a href="https://youtu.be/4OmOwSB7xP8">BPS.space — Scout F, Engineering Cut</a> — revisit the reference build as a model of how to <em>communicate</em> a TVC project's results end to end.</li>
+        <li><a href="https://www.mathworks.com/help/simulink/ug/simulink-report-generator.html">Documenting a Simulink model</a> (MathWorks) — for pulling clean architecture diagrams and parameters into the report.</li>
+        <li><a href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes">Writing a good README</a> (GitHub Docs) — structure for the clone-and-continue handoff.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>MR-3 demo + briefing + final report + tidy, handoff-ready repository.</div>
+    </div>
+  </article>
+
+  <div class="milestone">
+    <div class="label">Milestone Review · Day 15</div>
+    <h3>MR-3 — Flight Software Demo</h3>
+    <p>Ready when you can check every box:</p>
+    <ul>
+      <li>Flight computer holds its loop rate with sensors, estimator, controller, servo output, and logging all active.</li>
+      <li>Estimator validated at known angles and characterized for drift.</li>
+      <li>Live demo: tilt the assembly, gimbal corrects — correct direction, sensible magnitude, stable.</li>
+      <li>Bench-vs-sim step-response overlay with a defensible explanation of every visible difference.</li>
+      <li>Final report and briefing delivered; repository handoff-ready.</li>
+      <li>Can answer: <em>What surprised you most going from sim to hardware? Which single model improvement would most reduce the sim/bench gap? What is the very next test on the path to a real flight?</em></li>
+    </ul>
+  </div>
+
+  <div class="pagenav">
+    <a href="day14.html">← Day 14</a>
+    <a href="hardware.html">Hardware &amp; parts →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 15</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 11 — Arduino Foundations &amp; Loop Scheduling | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 11 of 15</div>
+    <h1>Arduino Foundations &amp; Loop Scheduling</h1>
+    <p class="lede">Flight software is a loop that must never be late. Learn to write non-blocking code before touching a single sensor.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">11</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Set up the toolchain, blink an LED, and use the serial monitor/plotter as your telemetry window.</li>
+        <li>Internalize the non-blocking pattern: <strong>never</strong> <code>delay()</code> in flight code. Schedule work off <code>millis()</code>/<code>micros()</code>.</li>
+        <li>Build the flight-software skeleton: a main loop that runs the GNC task at exactly 100 Hz, mirrors your Simulink Flight Software subsystem (read → estimate → control → command → log), and measures its own timing.</li>
+        <li>Connect the concept: the fixed loop period on the Arduino <em>is</em> the sample time of your discrete controller — the ZOH from Day 7 made real.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Everything since Day 7 has been designed for this moment: your Simulink flight software is already discrete, already sampled at a fixed rate through zero-order holds, which means porting it to a microcontroller is a translation, not a redesign. But embedded code has one hard rule that Simulink enforces for you automatically and C does not: the loop must never be late. Any function that blocks — most notoriously <code>delay()</code> — steals time from the loop and turns your fixed 100 Hz sample rate into a jittery, effectively-lower rate, silently eroding exactly the stability margin you spent Day 7 characterizing. Today is entirely about the discipline of avoiding that trap: scheduling work against <code>millis()</code>/<code>micros()</code> timestamps instead of blocking calls, so multiple things can happen at different rates without ever waiting. The skeleton you build — read → estimate → control → command → log, running at a measured, held 100 Hz — is a direct, function-for-function mirror of the Flight Software subsystem from Simulink; today it just runs stub logic. Every remaining day of Phase 3 fills in one of those functions for real, so getting the scaffolding solid and provably on-rate now is what keeps Days 12 through 14 from turning into timing debugging sessions.
+      </div>
+
+      <h4>Concept 1 — Why <code>delay()</code> is the enemy</h4>
+      <p>In introductory Arduino code <code>delay(1000)</code> is everywhere, and it's fine there. In flight code it's disqualifying, and understanding <em>why</em> is the whole point of today. <code>delay()</code> is <strong>blocking</strong>: for its entire duration the processor does nothing else — it can't read a sensor, update the estimator, or command the servo. Your control loop is a contract to do all of those things every 10 ms; a single blocking call breaks the contract.</p>
+      <p>The consequence is subtle because it's not a crash — it's <em>jitter</em>. If your loop usually takes 6 ms but occasionally a blocking call stretches it to 14 ms, your sample rate isn't a clean 100 Hz anymore; it's a wandering rate that dips whenever something blocks. And recall from Day 7 exactly what an irregular, lower sample rate does: it adds phase lag and eats stability margin. A loop that jitters is a loop that can go unstable on the bench for reasons that have nothing to do with your control design. The insidious part is that it works fine in casual testing and fails only under load — which is why the discipline has to be structural, not something you remember to check.</p>
+
+      <h4>Concept 2 — The non-blocking pattern: schedule against a clock</h4>
+      <p>The replacement for "wait, then act" is "check the clock, act if it's time, otherwise move on." Instead of blocking, you record <em>when</em> each task last ran and compare against the current time from <code>millis()</code> (milliseconds) or <code>micros()</code> (microseconds):</p>
+      <ul>
+        <li><strong>Read the clock, don't sleep against it.</strong> Each pass through <code>loop()</code>, ask "has 10 ms elapsed since the last GNC cycle?" If yes, run the cycle and update the timestamp; if no, fall through and let other work happen. Nothing ever waits.</li>
+        <li><strong>Multiple rates coexist.</strong> Because tasks are scheduled independently, the GNC cycle can run at 100 Hz, telemetry at 20 Hz, and a status LED at 2 Hz, all from the same loop, none blocking the others. This is exactly the multi-rate structure your sensors will need (the barometer is slower than the IMU, Day 8).</li>
+        <li><strong>Prefer <code>micros()</code> for the control cycle.</strong> At 100 Hz your period is 10 000 µs; millisecond resolution is coarse enough to introduce visible timing quantization, so time the GNC loop in microseconds. Watch for <code>millis()</code>/<code>micros()</code> rollover in long runs, though for a short flight it rarely bites.</li>
+      </ul>
+      <p>The mental shift: flight software is <strong>cooperative</strong>. No single task is allowed to monopolize the processor, because every task depends on the loop coming back around on time. This is the poor-man's real-time scheduler, and for a single 100 Hz control loop it's entirely sufficient.</p>
+
+      <h4>Concept 3 — The skeleton mirrors Simulink, function for function</h4>
+      <p>The structure you build today isn't arbitrary — it's the Flight Software subsystem from Day 5, translated into C functions. The GNC cycle is five steps in fixed order:</p>
+      <ul>
+        <li><strong>read()</strong> — pull the latest sensor samples (stubbed today, real on Day 12).</li>
+        <li><strong>estimate()</strong> — run the attitude estimator (stub today, the gyro-quaternion propagation from Day 9 on Day 13).</li>
+        <li><strong>control()</strong> — the discrete PID (stub today, the ported Day 7 controller on Day 14).</li>
+        <li><strong>command()</strong> — write the actuator output (stub today, the servo drive on Day 14).</li>
+        <li><strong>log()</strong> — record telemetry for post-run analysis.</li>
+      </ul>
+      <p>Keeping this one-to-one correspondence with the Simulink subsystem is what makes the whole Phase 3 port honest and debuggable: when the bench behaves differently from sim, you can compare function to block directly. Fill each stub in on its scheduled day, and the skeleton never changes shape — you're only ever swapping stub logic for real logic inside a scaffold that already holds rate.</p>
+
+      <h4>Concept 4 — The loop period IS your sample time</h4>
+      <p>This is the conceptual keystone of the day: the fixed period of your Arduino loop is not merely <em>like</em> the discrete controller's sample time — it <strong>is</strong> that sample time, the Day 7 zero-order hold made physical. In Simulink the ZOH was a block that held the controller output constant between ticks; on hardware, the loop running once every 10 ms and holding the servo command until the next cycle is literally the same behavior. This means two things: the sample rate you validated in sim (and swept to find its breaking point on Day 7) is only real if the loop actually holds that rate, and any jitter is a discrepancy between the sim's perfect clock and the hardware's real one. That's precisely why the skeleton must <em>measure and report its own timing</em> — worst-case loop duration and overrun count — from day one. You can't just assume you're at 100 Hz; you prove it, because everything downstream was tuned assuming it's true.</p>
+
+      <div class="callout">
+        <span class="label">Instrument the loop from the start</span>
+        Build timing telemetry into the skeleton before you add any real function, and keep it there for the rest of the course. At minimum, track: actual loop period (should sit tight at 10 000 µs), worst-case execution time per cycle (how much headroom you have before you overrun), and an overrun counter (cycles that took longer than the budget). When you add a sensor read on Day 12 or the estimator on Day 13, these numbers tell you instantly whether the new code fits in the budget. A loop that silently slips from 100 Hz to 70 Hz as you add features is the single most common Phase 3 failure, and this instrumentation catches it the moment it starts — long before it shows up as mysterious controller misbehavior.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Work through Blink Without Delay, then extend it: three LEDs at three unrelated rates, no <code>delay()</code>.</li>
+        <li>Write <code>fsw_skeleton.ino</code>: a 100 Hz scheduler with stubbed estimate/control functions, printing loop rate and worst-case overrun. Prove it holds rate while printing telemetry.</li>
+        <li>Stress-test the scheduler: deliberately add a slow operation (a long print, a fake computation) and watch the timing telemetry catch the overrun. Then fix it — this rehearses the exact debugging you'll do for real later.</li>
+        <li>Notebook entry: map each Simulink Flight Software block to its function in the skeleton, so the correspondence is documented before the functions get filled in.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Any <code>delay()</code> in the loop.</strong> Even a small one. It blocks everything and jitters your rate. There is no acceptable <code>delay()</code> in flight code.</li>
+          <li><strong>Blocking library calls in disguise.</strong> Some sensor libraries block while waiting for data. A blocking read is a hidden <code>delay()</code> — check data-ready flags instead (Day 12).</li>
+          <li><strong>Assuming the rate instead of measuring it.</strong> "It should be 100 Hz" is not "it is 100 Hz." Instrument and verify.</li>
+          <li><strong>Heavy work inside the cycle.</strong> A big <code>Serial.print</code> or a floating-point-heavy stub can blow the 10 ms budget. Measure execution time and keep headroom.</li>
+          <li><strong>Ignoring <code>micros()</code> rollover.</strong> Rare on short flights, but use the subtraction idiom (<code>now - last</code>) that survives rollover rather than comparing absolute times.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://www.arduino.cc/en/Tutorial/BuiltInExamples/BlinkWithoutDelay">Arduino — Blink Without Delay</a> — the canonical non-blocking pattern; the whole day grows from this one example.</li>
+        <li><a href="https://www.arduino.cc/">arduino.cc</a> — language reference as needed.</li>
+        <li><a href="https://learn.adafruit.com/multi-tasking-the-arduino-part-1">Multi-tasking the Arduino, Part 1</a> (Adafruit) — extends Blink Without Delay into scheduling several tasks at different rates, exactly the skeleton pattern.</li>
+        <li><a href="https://docs.arduino.cc/built-in-examples/digital/BlinkWithoutDelay/">Arduino <code>millis()</code> / timing reference</a> — the clock functions and the rollover-safe subtraction idiom.</li>
+        <li><a href="https://www.gammon.com.au/millis">millis() and micros() — Gammon</a> — a thorough, practical reference on non-blocking timing and rollover if you want the deep version.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b><code>fsw_skeleton.ino</code> holding 100 Hz with timing telemetry (period, worst-case execution, overrun count); notebook entry mapping each Simulink block to a function in the skeleton.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day10.html">← Day 10</a>
+    <a href="day12.html">Day 12 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 11</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

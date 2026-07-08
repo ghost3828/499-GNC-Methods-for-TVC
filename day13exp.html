@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 13 — Real-Time Attitude Estimation on Hardware | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 13 of 15</div>
+    <h1>Real-Time Attitude Estimation on Hardware</h1>
+    <p class="lede">Port the Day 9 estimator. The board should know which way is up — and keep knowing it while you wave it around.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">13</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Implement quaternion integration of the gyro at 100 Hz (fixed-step, renormalize each cycle) — the discrete twin of your Day 3 script and the Day 9 flight estimator.</li>
+        <li>Add startup gyro-bias calibration: average N samples while stationary, subtract thereafter. Quantify the drift improvement.</li>
+        <li>Implement an accelerometer correction that is valid <strong>only at rest on the bench</strong> (where specific force ≈ gravity), and understand why this correction must be disabled under thrust — the Day 9 result.</li>
+        <li>Validate against physical truth: rest the board at known angles (level, 30°, 45°, 90° using a protractor/angle block) and record estimator error; do fast slews and confirm it recovers.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        This is where the navigation you designed on Day 9 becomes a function running for real, at 100 Hz, on the loop skeleton from Day 11 with the characterized sensors from Day 12. The core of it is the gyro-driven quaternion propagation from Day 9: initialize attitude from a known orientation, then integrate body rates through <code>q̇ = ½ q ⊗ [0; ω]</code> every cycle, renormalizing each step — the discrete twin of your Day 3 MATLAB script. Startup bias calibration earns its keep immediately: average the gyro over a few stationary seconds at boot and subtract that estimate thereafter, directly attacking the linear drift from Day 8. There's one nuance specific to the bench that's worth being precise about. On Day 9 you established that under motor thrust the accelerometer is useless as a gravity reference — thrust specific force swamps gravity — so the <em>flight</em> estimator is gyro-only. But on the bench, at rest, there is no thrust, so specific force really is just gravity, and the accelerometer <em>is</em> a valid "down" reference. That makes the bench a place where you can add an accelerometer correction (a complementary blend) to hold attitude indefinitely against drift while you test and demonstrate — as long as you understand it's a bench convenience that gets disabled the moment a motor lights. The only way to know any of this works is to check it against truth you can independently verify: rest the board at physically-measured angles and read the error, then move it fast and confirm it tracks and recovers. This is also where the untested peregrine-developments Orientation library, flagged on Day 3, earns its verification — the known-angle table is the check it must pass first.
+      </div>
+
+      <h4>Concept 1 — Porting the quaternion propagator to run at 100 Hz</h4>
+      <p>The heart of today is the Day 9 flight estimator, now in C, running once per loop cycle. The steps are exactly the ones you wrote out on Day 9, translated to the embedded loop:</p>
+      <ol>
+        <li><strong>Initialize <code>q</code>.</strong> At boot, set the starting attitude from the accelerometer-derived vertical (valid because the board is at rest — Concept 3).</li>
+        <li><strong>De-bias the gyro.</strong> Subtract the startup-calibrated bias from every reading: <code>ω = ω_measured − b</code>.</li>
+        <li><strong>Form <code>q̇ = ½ q ⊗ [0; ω]</code></strong> using ω straight from the gyro in the body frame.</li>
+        <li><strong>Integrate one step</strong> over the measured Δt (use the actual loop period from your Day 11 timing, not a hardcoded 0.01 — if the loop jitters, using the real Δt keeps integration honest).</li>
+        <li><strong>Renormalize</strong>: <code>q ← q / |q|</code>. Non-negotiable, exactly as on Day 3 and Day 9.</li>
+        <li><strong>Convert and output</strong> to Euler angles (for the serial plotter) or keep as quaternion for the controller.</li>
+      </ol>
+      <p>Two embedded-specific notes. First, <strong>use the measured loop period</strong> for Δt — this is why Day 11's timing instrumentation matters; a jittering loop integrated with a constant assumed Δt accumulates error. Second, watch numerical precision: on a microcontroller, prefer <code>float</code> at minimum and be aware that repeated operations accumulate rounding — renormalization also quietly cleans this up. Writing the quaternion math yourself is preferred because when the known-angle validation shows an error, you can see exactly which line to inspect.</p>
+
+      <h4>Concept 2 — Startup bias calibration: the highest-value ten lines of code</h4>
+      <p>Day 12 measured the gyro's resting bias offline; today that measurement becomes an automatic boot-time step. The logic is simple and its payoff is large: while the board sits still at startup, average N samples of each gyro axis — since the board isn't rotating, that average <em>is</em> the bias — store it, and subtract it from every subsequent reading. Because attitude comes from integrating rate (Day 9), removing a constant bias converts a fast, linear drift into a slow one, which over a short flight is the difference between a usable estimate and a tumble.</p>
+      <p>Two practical points. The board <em>must actually be still</em> during calibration — if it's moving, you'll bake real rotation into the "bias" and make things worse, so gate calibration on a stillness check or a clear "hold still" indication. And bias drifts slowly with temperature over long runs (Day 8), so a boot-time calibration is right for a short flight but wouldn't suffice for a long one — a limitation worth noting rather than hiding. Quantify the win explicitly: run the drift test with and without bias subtraction and put both curves on one plot.</p>
+
+      <h4>Concept 3 — The bench accelerometer correction, and why it's bench-only</h4>
+      <p>This is the nuance to get exactly right, because it's where Day 9's flight logic and today's bench reality meet. Recall the Day 9 result: <strong>under thrust the accelerometer cannot find "down"</strong> — the engine's specific force (many g's along the body axis) swamps gravity's 1 g, so in flight the estimator is gyro-only. That result stands.</p>
+      <p>But today you're on the bench, not in flight, and on the bench there is no thrust. A board sitting or moving gently in your hand experiences only one significant specific force: the 1 g reaction to gravity. So <em>at rest</em>, the accelerometer is once again a valid absolute "down" reference — exactly as it was on the pad in Day 9's alignment step. This lets you add a <strong>complementary-filter correction</strong> for bench testing: integrate the gyro for fast response (the high-pass path) and slowly pull the estimate toward the accelerometer's gravity direction (the low-pass path), blended with a single crossover-frequency knob. The benefit is that on the bench your attitude estimate no longer drifts at all — it's held absolutely by gravity — which makes the known-angle validation and the live demo far cleaner.</p>
+      <p>The discipline is understanding the boundary: this correction is valid <em>because</em> there's no thrust. It is a bench and pad-alignment tool, not a flight algorithm. The moment a motor would light, the accelerometer term must be disabled (its weight driven to zero) and the estimator falls back to pure gyro propagation — precisely the Day 9 design. Implement the correction with that switch explicit, so the bench version and the flight version are the same code in two modes, not two different estimators. Being able to articulate this distinction — <em>why the accelerometer helps on the bench and must be abandoned under thrust</em> — is a core thing MR-3 will probe.</p>
+
+      <h4>Concept 4 — Validation against physical truth</h4>
+      <p>An estimator that produces plausible-looking numbers is not a validated estimator. Today you check it against truth you can measure independently, two ways:</p>
+      <ul>
+        <li><strong>Static known-angle table.</strong> Rest the board at physically-set angles — level, 30°, 45°, 90° — using a protractor, angle block, or machinist's square, and record the estimator's reported angle at each. The error at each angle is your accuracy number. This catches scale errors, axis-mapping mistakes, and initialization bugs that a "looks about right" glance would miss.</li>
+        <li><strong>Dynamic slew-and-recover.</strong> Rotate the board quickly to a new attitude and confirm the estimate <em>tracks</em> during the motion and <em>settles</em> to the correct value after — no lag that never catches up, no divergence, no drift-away. This tests the integration and the correction dynamics, not just the static answer.</li>
+        <li><strong>Long-duration drift test.</strong> Leave the board still for 5 minutes and watch how far the estimate wanders — with pure gyro (expect visible drift, slower with bias removal) versus with the bench accelerometer correction on (expect essentially no drift). The gap between those two curves is a direct, physical picture of the Day 8 drift problem and the Day 9 reason the pad alignment and short flight time matter.</li>
+      </ul>
+      <p>This known-angle table is also the acceptance test for any third-party library. If you're tempted to use the peregrine-developments Orientation library instead of your own math, it has to reproduce this table first — flagged as untested since Day 3, this is where it earns trust or gets rejected.</p>
+
+      <div class="callout">
+        <span class="label">Why validate on the bench when flight is gyro-only</span>
+        It's fair to ask: if flight attitude comes purely from gyro propagation, why lean on the accelerometer correction today at all? Two reasons. First, the correction makes the bench demo and known-angle validation clean and repeatable, letting you verify the <em>gyro propagation and bias calibration</em> against absolute truth without drift muddying the picture. Second, the pad-alignment step your flight estimator depends on (Day 9) <em>is</em> exactly this at-rest accelerometer reference — so validating it on the bench directly validates the one place flight uses it. You're not testing a flight algorithm you won't fly; you're testing the at-rest reference the flight algorithm initializes from, plus the gyro propagation it runs on. Keep the accelerometer weight as a single switch so the bench-on and flight-off cases are one codebase.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Port your estimator into the skeleton: gyro-quaternion propagation at 100 Hz using the measured loop period for Δt, renormalized each cycle. Writing the quaternion math yourself is preferred; if you adopt the <a href="https://github.com/peregrine-developments/Orientation">Orientation library</a>, first verify it against your own MATLAB results and the known-angle table — it's untested by the instructor.</li>
+        <li>Implement startup bias calibration gated on a stillness check; quantify the drift improvement with a with/without overlay.</li>
+        <li>Implement the accelerometer correction as a weighted complementary blend with an explicit enable switch, so it can be turned off to reproduce the flight (gyro-only) behavior.</li>
+        <li>Stream estimated Euler angles to the serial plotter; capture the known-angle validation table (level/30/45/90).</li>
+        <li>Run the drift test: 5 minutes stationary — how far does the estimate wander with pure (de-biased) gyro versus with the accelerometer correction enabled? Plot both.</li>
+        <li>Confirm the Day 11 timing telemetry still holds 100 Hz with the estimator in the loop.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Hardcoding Δt.</strong> Use the measured loop period. A jittering loop with an assumed constant Δt drifts the integration; Day 11's timing data is there for this.</li>
+          <li><strong>Forgetting renormalization.</strong> Same lesson as Day 3 and Day 9: <code>q ← q/|q|</code> every cycle, or attitude silently corrupts within seconds.</li>
+          <li><strong>Calibrating bias while the board moves.</strong> Real motion baked into the "bias" makes drift worse. Gate calibration on stillness.</li>
+          <li><strong>Leaving the accelerometer correction on "for flight."</strong> It's valid only without thrust. Wire it as a switch that flight disables; conflating bench and flight modes here reintroduces exactly the Day 9 failure.</li>
+          <li><strong>Euler-angle integration.</strong> Integrate the quaternion, not Euler angles — a board waved through large angles hits gimbal lock otherwise (Day 2).</li>
+          <li><strong>Declaring success without a truth reference.</strong> "Looks right on the plotter" isn't validation. Use the protractor/angle-block table.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> Re-read the <a href="http://blog.tkjelectronics.dk/2012/09/a-practical-approach-to-kalman-filter-and-how-to-implement-it/">TKJ Electronics filter tutorial</a> — this time as an implementer, for the complementary-blend and bias-handling mechanics.</li>
+        <li><a href="https://ahrs.readthedocs.io/en/latest/filters/complementary.html">Complementary filter — AHRS docs</a> — the gyro-integration-plus-accelerometer-correction blend written out, matching the bench correction you're implementing.</li>
+        <li><a href="https://github.com/peregrine-developments/Orientation">Orientation library</a> (peregrine-developments) — the untested C++ quaternion library flagged on Day 3; verify against your own results and the known-angle table before trusting it.</li>
+        <li>Wie, <em>Space Vehicle Dynamics and Control</em> — quaternion kinematics sections (the propagation equation, revisited from Days 3 and 9).</li>
+        <li><a href="https://learn.adafruit.com/comparing-gyroscope-datasheets">Understanding gyro drift and bias in practice</a> (Adafruit) — grounds the bias-calibration and drift-test intuition in real IMU behavior.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Gyro-quaternion estimator running at 100 Hz on hardware (bias-calibrated, renormalized, measured-Δt); known-angle validation table; drift comparison plot (de-biased gyro vs. accelerometer-corrected); accelerometer correction implemented as a flight-disablable switch.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day12.html">← Day 12</a>
+    <a href="day14.html">Day 14 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 13</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

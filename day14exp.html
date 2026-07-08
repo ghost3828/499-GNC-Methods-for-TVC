@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 14 — Servos, Controller Port &amp; the Benchtop Closed Loop | GNC Methods for TVC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
+  <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="syllabus.html">Syllabus</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="resources.html">Resources</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="content">
+
+  <section class="flightstrip">
+    <div class="strip-row"><a href="syllabus.html">Syllabus</a> · Day 14 of 15</div>
+    <h1>Servos, Controller Port &amp; the Benchtop Closed Loop</h1>
+    <p class="lede">Actuation, then the moment of truth: tilt the vehicle and watch the gimbal push back.</p>
+  </section>
+
+  <article class="day">
+    <div class="day-marker"><span class="lbl">DAY</span><span class="d">14</span></div>
+    <div class="day-body">
+      <h4>Objectives</h4>
+      <ul>
+        <li>Drive hobby servos with the Servo library / PWM; map gimbal angle δ ↔ servo microseconds, including linkage geometry, direction, and software travel limits that protect the mount.</li>
+        <li>Port the Day 7 discrete PID — identical gains, sample rate, saturation, and anti-windup — from Simulink into C.</li>
+        <li>Close the loop on the bench: mount the flight computer on (or with) the TVC assembly, command "vertical," and demonstrate that tilting the assembly drives a correcting gimbal deflection in the right direction, promptly, without oscillation.</li>
+        <li>Compare against sim: apply an attitude step on the bench, log the response, and overlay it on the equivalent Simulink run. Explain the differences (servo lag? linkage slop? estimator lag? loop jitter?).</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#4E6E33;">
+        <span class="label" style="color:#4E6E33;">Primer</span>
+        Every piece is now in place — a scheduled 100 Hz loop (Day 11), clean characterized sensors (Day 12), and a validated real-time estimator (Day 13) — except the one that turns knowledge into action. Today adds actuation and closes the loop for real. Driving the servo is mostly geometry: mapping the gimbal angle δ your controller commands to a PWM pulse width in microseconds, respecting the actual linkage direction and travel limits so software can't command the mount into itself. The control law itself should not be reinvented — port the exact discrete PID from Day 7, same gains, same sample rate, same saturation and anti-windup logic, because the entire value of this exercise is a fair, like-for-like comparison between simulated and physical behavior. When you finally mount the flight computer with the TVC assembly and tip it by hand, the gimbal correcting promptly, in the right direction, without oscillating, is the payoff of every day since Day 1. It almost never matches simulation exactly on the first try, and that's expected, not a failure: servo lag, linkage slop, estimator lag, and loop jitter each leave a distinct fingerprint on a step-response overlay, and diagnosing which one you're looking at — using the log data, like an engineer, not a guess — is exactly the skill MR-3 is designed to test.
+      </div>
+
+      <h4>Concept 1 — Driving a servo: geometry, not control</h4>
+      <p>A hobby servo is a closed-loop positioner in its own right — you command an <em>angle</em> and its internal electronics drive there. You command that angle with a PWM signal whose pulse width (conventionally ~1000–2000 µs, ~1500 µs at center) maps to servo position. The Arduino Servo library hides the raw PWM and lets you write microseconds or degrees. So driving the gimbal is a mapping problem, not a control problem — but the mapping has several real subtleties:</p>
+      <ul>
+        <li><strong>Angle-to-microseconds calibration.</strong> The controller thinks in gimbal angle δ (radians or degrees); the servo thinks in microseconds. You need the actual mapping for <em>your</em> servo and linkage — it's roughly linear but the slope and center offset are specific to the build. Measure it, don't assume the nominal.</li>
+        <li><strong>Linkage geometry and direction.</strong> The servo horn connects to the gimbal through a mechanical linkage that has its own ratio and, critically, a <em>direction</em>. A positive servo command might produce a negative gimbal deflection depending on how the linkage is arranged — the actuator twin of Day 12's sensor sign check. Get this backwards and the loop drives the wrong way just as surely as a flipped gyro.</li>
+        <li><strong>Software travel limits.</strong> The physical mount has a hard range (±5–10°, Day 4). Clamp the commanded microseconds in software <em>below</em> the mechanical limit so the controller can never drive the servo into the stop — that protects the hardware and matches the saturation you modeled in sim.</li>
+        <li><strong>Center and trim.</strong> "Zero gimbal" is a specific microsecond value you establish by calibration, not necessarily 1500 µs. Find it so that neutral command means thrust-along-axis.</li>
+      </ul>
+
+      <h4>Concept 2 — Port the controller exactly; don't redesign it</h4>
+      <p>The temptation on hardware is to "tweak" the controller. Resist it. The entire scientific value of today is a <strong>like-for-like comparison</strong>: the same discrete PID you validated in sim, running on hardware, so that any difference in behavior is attributable to the <em>physical</em> effects (servo, linkage, real sensor, real timing) rather than a different controller. Port from Day 7 verbatim:</p>
+      <ul>
+        <li><strong>Identical gains</strong> — the frozen <code>vehicle_params.m</code> values from Day 10.</li>
+        <li><strong>Identical sample rate</strong> — 100 Hz, the loop period you're already holding (Day 11).</li>
+        <li><strong>Identical saturation</strong> — the same ±limit, now also enforced by the servo travel clamp.</li>
+        <li><strong>Identical anti-windup</strong> — the same clamping/back-calculation logic from Day 7, which matters more on hardware because the servo really does saturate.</li>
+        <li><strong>Derivative on measurement, not error</strong> — the Day 6/7 structural choice that avoids derivative kick and tames noise; carry it over exactly.</li>
+      </ul>
+      <p>If the ported controller misbehaves, that's <em>information</em> about the sim-hardware gap, which is the deliverable — not a cue to start hand-tuning. Change one thing only if forced, and log why. A faithful port that reveals a discrepancy is worth far more than a re-tuned one that hides it.</p>
+
+      <h4>Concept 3 — Bring-up order: open loop before closed loop</h4>
+      <p>Closing a feedback loop on an unstable-by-design system for the first time is exactly when a wiring or sign error becomes violent, so sequence the bring-up to fail safe:</p>
+      <ul>
+        <li><strong>Servo checkout, sensors out of the loop.</strong> First, with no feedback, command the servo directly: sweep it across its range, confirm the travel limits, find center, and verify the linkage direction (positive command → which way does the gimbal actually point?). This isolates the actuator mapping completely before any feedback can amplify a mistake.</li>
+        <li><strong>Then close the loop.</strong> Only once the servo mapping is proven do you connect estimator → controller → servo. Do it ready to cut power, because a sign error now produces immediate divergence.</li>
+        <li><strong>Tilt test.</strong> Command "hold vertical," then tip the assembly by hand. The gimbal should deflect to push back toward vertical — correct direction, sensible magnitude, and settling without oscillation. This is the payoff moment, and it's also a complete end-to-end sign check: sensor → estimator → controller → linkage → gimbal, all correct, or it visibly isn't.</li>
+      </ul>
+      <p>If it oscillates or diverges, reach for the Day 10 suspect list rather than random tweaks — and you have logs (Day 12) to diagnose from. A 2 Hz oscillation, a wrong-direction correction, and a slow divergence each point at different causes.</p>
+
+      <h4>Concept 4 — The sim-vs-hardware overlay: reading the fingerprints</h4>
+      <p>The intellectual core of MR-3 is the step-response overlay: apply the same attitude step on the bench that you applied in sim, log the response, and plot the two on the same axes. They won't match perfectly, and the <em>way</em> they differ is diagnostic — each physical effect leaves a recognizable fingerprint:</p>
+      <ul>
+        <li><strong>Servo lag / rate limit</strong> → the bench response rises more slowly than sim, or rounds off sharp commands. The actuator can't keep up with what the controller asks.</li>
+        <li><strong>Linkage slop (backlash)</strong> → a small dead zone around direction changes; the gimbal doesn't respond until the mechanical slack is taken up. Shows as a flat spot or hysteresis near zero.</li>
+        <li><strong>Estimator lag</strong> → the whole response is delayed by roughly the estimator's effective latency; the controller is acting on slightly old attitude.</li>
+        <li><strong>Loop jitter</strong> → irregular, noisy timing in the response that a clean-clock sim never shows; if present, revisit Day 11's timing telemetry.</li>
+        <li><strong>Un-modeled friction / mass</strong> → the bench assembly's pivot friction and real inertia differ from the model, shifting damping and settling.</li>
+      </ul>
+      <p>The skill being graded isn't "make them match" — it's <em>explaining</em> the difference from evidence in the log. "The bench lags sim by ~40 ms, consistent with our measured servo response plus one cycle of estimator latency" is an engineering answer; "hardware is just different" is not. This is also where you identify the single model improvement that would most reduce the gap — the MR-3 question.</p>
+
+      <div class="callout">
+        <span class="label">Rehearse the demo today, not tomorrow</span>
+        MR-3 is a live demo, and live demos fail in ways bench testing doesn't: a loose connector, a flat battery, a laptop that won't enumerate the serial port, an SD card that fills up. Run the entire MR-3 sequence end-to-end at least once today — power-on, calibrate, close the loop, do the tilt demo, capture the step response, save the logs — exactly as you'll run it tomorrow. Anything that's going to go wrong is far cheaper to discover now, with a day of margin, than in front of reviewers. A demo that's been rehearsed once is a categorically different thing from one assembled the morning of.
+      </div>
+
+      <h4>Do</h4>
+      <ul>
+        <li>Servo checkout first, sensors out of the loop: sweep commands, verify limits and center, confirm linkage direction. Calibrate the δ↔µs mapping for your actual build.</li>
+        <li>Port the Day 7 discrete PID verbatim (gains, rate, saturation, anti-windup, derivative-on-measurement) from the frozen config.</li>
+        <li>Close the loop. Do the tilt test: command vertical, tip by hand, confirm prompt correct-direction correction without oscillation. Debug with the Day 10 suspect list, in the log data.</li>
+        <li>Capture the sim-vs-hardware step-response overlay and write the evidence-based explanation of every visible difference.</li>
+        <li>Rehearse the MR-3 demo end-to-end once today.</li>
+      </ul>
+
+      <div class="callout callout-pitfall">
+        <span class="label">Common pitfalls</span>
+        <ul>
+          <li><strong>Closing the loop before servo checkout.</strong> A sign or limit error is violent under feedback on an unstable plant. Prove the servo mapping open-loop first.</li>
+          <li><strong>Linkage direction backwards.</strong> The actuator version of the Day 12 sign bug — the gimbal corrects the wrong way and the vehicle fights itself. Verify direction during open-loop checkout.</li>
+          <li><strong>Re-tuning instead of comparing.</strong> Hand-tuning on the bench destroys the like-for-like comparison that is the whole point. Port exactly; treat discrepancies as data.</li>
+          <li><strong>No software travel limit.</strong> Without a clamp below the mechanical stop, the controller can drive the servo into the mount and strip a gear or bind the gimbal.</li>
+          <li><strong>Debugging without logs.</strong> "It oscillated" is not diagnosable; the logged sensor/estimate/command/servo traces are. Log every run (Day 12).</li>
+          <li><strong>Assembling the demo the morning of MR-3.</strong> Rehearse today. Live demos punish the un-rehearsed.</li>
+        </ul>
+      </div>
+
+      <h4>Read / Watch</h4>
+      <ul>
+        <li><span class="tag tag-start">Start here</span> <a href="https://lastminuteengineers.com/servo-motor-arduino-tutorial/">How Servo Motors Work &amp; How to Interface Them with Arduino</a> — PWM, the Servo library, and the microseconds mapping you'll calibrate.</li>
+        <li><a href="https://youtu.be/4OmOwSB7xP8?t=4275">BPS.space Scout F — TVC hardware section</a> — real TVC mount, linkage, and servo integration; see the geometry in a working build.</li>
+        <li><a href="https://www.arduino.cc/reference/en/libraries/servo/">Arduino Servo library reference</a> — <code>writeMicroseconds()</code> and the pulse-width details for precise gimbal commands.</li>
+        <li><a href="http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/">Improving the Beginner's PID</a> — Beauregard's series; the sample-time, derivative-on-measurement, and anti-windup mechanics you're porting to C.</li>
+        <li><a href="https://github.com/br3ttb/Arduino-PID-Library">Arduino PID Library</a> — a reference C implementation of exactly the discrete PID structure you're porting; compare against your own.</li>
+      </ul>
+      <div class="deliverable"><b>Deliverable</b>Benchtop closed loop working (calibrated servo mapping, verbatim-ported PID); logged bench step response overlaid on the simulated one, with a written, evidence-based explanation of the differences; MR-3 demo rehearsed.</div>
+    </div>
+  </article>
+
+  <div class="pagenav">
+    <a href="day13.html">← Day 13</a>
+    <a href="day15.html">Day 15 →</a>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span>GNC Methods for Thrust Vector Control · Day 14</span>
+    <span><a href="syllabus.html">Full syllabus</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
