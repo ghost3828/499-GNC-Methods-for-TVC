@@ -73,10 +73,6 @@ body{
   clip-path:polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
   display:inline-block;
 }
-.brand .brand-sub{
-  font-family:var(--mono); font-weight:700; font-size:.72rem;
-  letter-spacing:.18em; color:#9FB1C2; margin-left:2px;
-}
 .topbar nav{ display:flex; flex-wrap:wrap; gap:2px; padding:6px 0; }
 .topbar nav a{
   font-family:var(--mono); font-size:.72rem; letter-spacing:.1em;
@@ -102,6 +98,12 @@ main{ max-width:1060px; margin:0 auto; padding:34px 20px 70px; }
 }
 .strip-row::before{
   content:""; width:26px; height:3px; background:var(--accent); display:inline-block;
+}
+.site-eyebrow{
+  font-family:var(--disp); font-weight:700; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--accent-ink);
+  font-size:clamp(1.3rem, 3.4vw, 1.9rem); line-height:1.1;
+  margin:0 0 .3rem;
 }
 h1{
   font-family:var(--disp); font-weight:700; text-transform:uppercase;

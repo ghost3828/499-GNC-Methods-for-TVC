@@ -15,7 +15,7 @@
   <img class="site-logo site-logo-left" src="assets/af-logo.png" alt="U.S. Air Force Academy logo">
   <img class="site-logo site-logo-right" src="assets/astro-logo.png" alt="USAFA Astro logo">
   <div class="topbar-inner">
-    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC <span class="brand-sub">USAFA Astro · Independent Study</span></a>
+    <a class="brand" href="index.html"><span class="brand-mark"></span>GNC·TVC</a>
     <nav>
       <a href="index.html">Overview</a>
       <a href="syllabus.html">Syllabus</a>
@@ -39,7 +39,7 @@
     <div class="day-body">
       <h4>Objectives</h4>
       <ul>
-        <li>Deliver MR-3: live bench demo plus a 15-minute briefing covering architecture, models, results, and the sim-vs-hardware comparison.</li>
+        <li>Deliver MR-3: live bench demo plus a 20-minute briefing covering architecture, models, results, and the sim-vs-hardware comparison.</li>
         <li>Submit the final report (10–15 pages): GNC architecture; dynamics derivation; sim design and verification; control design and tuning rationale; estimation design; hardware implementation; results; lessons learned; and a concrete "path to flight" section — what remains before this vehicle could attempt free flight (6DOF validation, ignition/abort logic, structural work, range safety).</li>
         <li>Leave the repository in a state a future student could clone and continue: README, parameter files, wiring notes, and the notebook complete.</li>
       </ul>
@@ -50,12 +50,12 @@
       </div>
 
       <h4>Concept 1 — The briefing is an argument, not a tour</h4>
-      <p>A weak final briefing narrates what you did in order ("first we derived the equations, then we built the sim…"). A strong one makes an <em>argument</em>: the vehicle is unstable, here is why, here is the system we built to stabilize it, and here is the evidence it works. Structure the 15 minutes around that spine, with each earlier phase appearing as a link in the chain rather than a chapter to recount:</p>
+      <p>A weak briefing narrates what you did in order ("first we derived the equations, then we built the sim…"). A strong one makes an <em>argument</em>: the vehicle is unstable, here is why, here is the system we built to stabilize it, and here is the evidence it works. Structure the 20 minutes around that spine, with each earlier phase appearing as a link in the chain rather than a chapter to recount:</p>
       <ul>
-        <li><strong>The problem (≈2 min).</strong> Why a TVC rocket needs active control — the inverted-pendulum instability from Day 1, ideally with the Day 5 open-loop tumble plot as Exhibit A. This motivates everything after it.</li>
-        <li><strong>The approach (≈4 min).</strong> The GNC architecture, attitude representation and gyro propagation, the dynamics/torque model — compressed to the decisions that mattered, not every derivation.</li>
-        <li><strong>The results (≈6 min).</strong> The closed loop working in sim, the robustness envelope, and the hardware bring-up culminating in the live demo and the sim-vs-hardware overlay. This is where the time goes.</li>
-        <li><strong>The honest gaps and next steps (≈3 min).</strong> The path-to-flight section — what remains unproven. Owning the limits builds more credibility than overclaiming.</li>
+        <li><strong>The problem (≈3 min).</strong> Why a TVC rocket needs active control — the inverted-pendulum instability from Day 1, ideally with the Day 5 open-loop tumble plot as Exhibit A. This motivates everything after it.</li>
+        <li><strong>The approach (≈5 min).</strong> The GNC architecture, attitude representation and gyro propagation, the dynamics/torque model — compressed to the decisions that mattered, not every derivation.</li>
+        <li><strong>The results (≈8 min).</strong> The closed loop working in sim, the robustness envelope, and the hardware bring-up culminating in the live demo and the sim-vs-hardware overlay. This is where the time goes.</li>
+        <li><strong>The honest gaps and next steps (≈4 min).</strong> The path-to-flight section — what remains unproven. Owning the limits builds more credibility than overclaiming.</li>
       </ul>
       <p>Know your audience: reviewers will probe the reasoning, not just the outcome. The MR-3 questions — what surprised you sim-to-hardware, which model improvement would most reduce the gap, what's the next test toward flight — are argument questions, and they're on the checklist because a good engineer can answer them from evidence.</p>
 
@@ -95,7 +95,7 @@
 
       <h4>Do</h4>
       <ul>
-        <li>Deliver the MR-3 demo and 15-minute briefing structured as an argument (problem → approach → results → gaps), with a recorded fallback of the working demo and overlay.</li>
+        <li>Deliver the MR-3 demo and 20-minute briefing structured as an argument (problem → approach → results → gaps), with a recorded fallback of the working demo and overlay.</li>
         <li>Submit the final report (10–15 pages) with the sections above, each stating what, why, and how it was verified; captioned figures; justified parameters.</li>
         <li>Complete the path-to-flight section naming the specific unproven gaps and the next concrete test.</li>
         <li>Leave the repository clone-and-continue ready: README, versioned parameter files, wiring/sign notes, complete notebook, and the logs behind key plots.</li>
